@@ -26,85 +26,128 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/",               label: "작업 현황",   icon: LayoutDashboard },
-  { href: "/today",          label: "오늘 할 일",  icon: CalendarCheck   },
-  { href: "/todos",          label: "모든 할 일",  icon: CheckSquare     },
-  { href: "/archive",        label: "보관함",      icon: Archive         },
-  { href: "/projects",       label: "프로젝트",    icon: FolderKanban    },
-  { href: "/work",           label: "작업",   icon: Briefcase       },
-  { href: "/ideas",          label: "아이디어",    icon: Lightbulb       },
-  { href: "/meetings",       label: "회의록",      icon: Calendar        },
-  { href: "/presentations",  label: "발표자료",    icon: Presentation    },
-  { href: "/docs",           label: "문서",        icon: FileText        },
-  { href: "/weekly",         label: "주간 보고서", icon: CalendarRange   },
+  { href: "/",               label: "작업 현황",   short: "현황",   icon: LayoutDashboard },
+  { href: "/today",          label: "오늘 할 일",  short: "오늘",   icon: CalendarCheck   },
+  { href: "/todos",          label: "모든 할 일",  short: "할 일",   icon: CheckSquare     },
+  { href: "/archive",        label: "보관함",      short: "보관",   icon: Archive         },
+  { href: "/projects",       label: "프로젝트",    short: "PJT",    icon: FolderKanban    },
+  { href: "/work",           label: "작업",        short: "작업",   icon: Briefcase       },
+  { href: "/ideas",          label: "아이디어",    short: "IDEA",   icon: Lightbulb       },
+  { href: "/meetings",       label: "회의록",      short: "회의",   icon: Calendar        },
+  { href: "/presentations",  label: "발표자료",    short: "발표",   icon: Presentation    },
+  { href: "/docs",           label: "문서",        short: "문서",   icon: FileText        },
+  { href: "/weekly",         label: "주간 보고서", short: "주간",   icon: CalendarRange   },
 ];
 
 const STORAGE_KEY = "flowdesk-sidebar-collapsed";
 
-function NavLinks({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
+function NavLinks({
+  collapsed,
+  onNavigate,
+}: {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   return (
-    <nav className="flex-1 px-2 py-3 space-y-0.5">
-      {navItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = pathname === item.href;
-        const link = (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            className={cn(
-              "flex items-center rounded-lg text-sm transition-colors relative",
-              collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5",
-              isActive
-                ? "bg-primary text-primary-foreground font-medium"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            {!collapsed && item.label}
-          </Link>
-        );
+    <nav className="flex-1 py-sm">
+      <ul className="flex flex-col">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/" && pathname.startsWith(item.href));
 
-        if (collapsed) {
-          return (
-            <Tooltip.Root key={item.href} delayDuration={0}>
-              <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  side="right"
-                  sideOffset={8}
-                  className="bg-foreground text-background text-xs px-2 py-1 rounded shadow-md z-50"
-                >
-                  {item.label}
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
+          const link = (
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              className={cn(
+                "relative flex items-center h-9 text-sm transition-colors duration-short ease-out-flow rounded-none",
+                collapsed ? "justify-center px-2" : "gap-2.5 pl-4 pr-3",
+                isActive
+                  ? "text-foreground font-medium bg-surface-2"
+                  : "text-ink-soft hover:text-foreground hover:bg-surface-2/60",
+              )}
+            >
+              {/* 단청 레드 좌측 보더 — 활성 상태 표식 */}
+              <span
+                className={cn(
+                  "absolute left-0 top-0 bottom-0 w-[2px] transition-colors duration-short",
+                  isActive ? "bg-accent" : "bg-transparent",
+                )}
+                aria-hidden
+              />
+              <Icon
+                className={cn(
+                  "w-4 h-4 shrink-0",
+                  isActive ? "text-foreground" : "text-muted-foreground",
+                )}
+                strokeWidth={1.5}
+              />
+              {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+            </Link>
           );
-        }
 
-        return link;
-      })}
+          if (collapsed) {
+            return (
+              <li key={item.href}>
+                <Tooltip.Root delayDuration={0}>
+                  <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Content
+                      side="right"
+                      sideOffset={6}
+                      className="border border-border-strong bg-foreground text-background font-mono text-2xs uppercase tracking-meta px-2 py-1 z-50"
+                    >
+                      {item.label}
+                    </Tooltip.Content>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              </li>
+            );
+          }
+
+          return <li key={item.href}>{link}</li>;
+        })}
+      </ul>
     </nav>
   );
 }
 
-function Logo({ collapsed }: { collapsed?: boolean }) {
-  if (collapsed) return null;
+function Brand({ collapsed }: { collapsed?: boolean }) {
+  if (collapsed) {
+    return <span className="seal" aria-label="FlowDesk" />;
+  }
   return (
-    <div className="flex items-center">
-      <span className="text-sm font-bold text-foreground tracking-tight">FlowDesk</span>
+    <div className="flex items-center gap-2">
+      <span className="seal" aria-hidden />
+      <span className="font-display text-md tracking-tight text-foreground">
+        FlowDesk
+      </span>
     </div>
   );
 }
 
-function StatusDot({ collapsed }: { collapsed?: boolean }) {
-  if (collapsed) return null;
+function Footer({ collapsed }: { collapsed?: boolean }) {
+  if (collapsed) {
+    return (
+      <div className="border-t border-border py-md flex justify-center">
+        <span
+          className="w-1.5 h-1.5 rounded-full bg-success"
+          aria-label="연동됨"
+        />
+      </div>
+    );
+  }
   return (
-    <div className="px-4 py-3 border-t border-border space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-success" />
-        <p className="text-xs text-muted-foreground">연동됨</p>
+    <div className="border-t border-border px-md py-sm space-y-sm">
+      <div className="flex items-center justify-between">
+        <span className="mono-meta">CLT · master</span>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-success" aria-hidden />
+          <span className="mono-meta !normal-case !tracking-snug">연동됨</span>
+        </div>
       </div>
       <ThemeToggle className="w-full justify-center" />
     </div>
@@ -130,72 +173,83 @@ export function Sidebar() {
 
   return (
     <Tooltip.Provider>
-      {/* 모바일 헤더 바 (md 미만에서만 표시) */}
-      <header className="md:hidden flex items-center justify-between px-4 h-14 border-b border-border bg-background sticky top-0 z-30 shrink-0">
-        <Logo />
+      {/* 모바일 헤더 바 */}
+      <header className="md:hidden flex items-center justify-between px-md h-14 border-b border-border bg-background sticky top-0 z-30 shrink-0">
+        <Brand />
         <button
+          type="button"
           onClick={() => setOpen(true)}
-          className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+          className="p-2 text-ink-soft hover:bg-surface-2 transition-colors duration-short ease-out-flow"
           aria-label="메뉴 열기"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-5 h-5" strokeWidth={1.5} />
         </button>
       </header>
 
       {/* 모바일 드로어 */}
       <Dialog.Root open={open} onOpenChange={setOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40 md:hidden" />
+          <Dialog.Overlay className="fixed inset-0 bg-foreground/40 z-40 md:hidden" />
           <Dialog.Content
-            className="fixed left-0 top-0 bottom-0 w-64 bg-background z-50 flex flex-col shadow-xl md:hidden"
+            className="fixed left-0 top-0 bottom-0 w-64 bg-surface border-r border-border z-50 flex flex-col md:hidden"
             aria-describedby={undefined}
           >
             <Dialog.Title className="sr-only">네비게이션 메뉴</Dialog.Title>
-            <div className="flex items-center justify-between px-4 h-14 border-b border-border">
-              <Logo />
+            <div className="flex items-center justify-between px-md h-14 border-b border-border">
+              <Brand />
               <Dialog.Close asChild>
                 <button
-                  className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  type="button"
+                  className="p-2 text-ink-soft hover:bg-surface-2 transition-colors duration-short ease-out-flow"
                   aria-label="메뉴 닫기"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5" strokeWidth={1.5} />
                 </button>
               </Dialog.Close>
             </div>
             <NavLinks onNavigate={() => setOpen(false)} />
-            <StatusDot />
+            <Footer />
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
 
-      {/* 데스크탑 사이드바 (md 이상에서만 표시) */}
+      {/* 데스크탑 사이드바 */}
       <aside
         className={cn(
-          "hidden md:flex sticky top-0 h-screen overflow-y-auto bg-background border-r border-border flex-col shrink-0 transition-all duration-200",
-          collapsed ? "w-14" : "w-52"
+          "hidden md:flex sticky top-0 h-screen overflow-y-auto bg-surface border-r border-border flex-col shrink-0 transition-[width] duration-medium ease-in-out-flow",
+          collapsed ? "w-14" : "w-56",
         )}
       >
-        <div className={cn(
-          "h-14 flex items-center border-b border-border",
-          collapsed ? "justify-center px-2" : "justify-between px-4"
-        )}>
-          <Logo collapsed={collapsed} />
-          <button
-            onClick={toggleCollapsed}
-            className={cn(
-              "p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors",
-              collapsed && "mt-0"
-            )}
-            aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}
-          >
-            {collapsed
-              ? <PanelLeftOpen className="w-4 h-4" />
-              : <PanelLeftClose className="w-4 h-4" />
-            }
-          </button>
+        <div
+          className={cn(
+            "h-14 flex items-center border-b border-border",
+            collapsed ? "justify-center px-2" : "justify-between px-md",
+          )}
+        >
+          <Brand collapsed={collapsed} />
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="p-1.5 text-ink-soft hover:bg-surface-2 transition-colors duration-short ease-out-flow"
+              aria-label="사이드바 접기"
+            >
+              <PanelLeftClose className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
         </div>
+        {collapsed && (
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="h-9 flex items-center justify-center text-ink-soft hover:bg-surface-2 transition-colors duration-short ease-out-flow border-b border-border"
+            aria-label="사이드바 펼치기"
+          >
+            <PanelLeftOpen className="w-4 h-4" strokeWidth={1.5} />
+          </button>
+        )}
         <NavLinks collapsed={collapsed} />
-        <StatusDot collapsed={collapsed} />
+        <Footer collapsed={collapsed} />
       </aside>
     </Tooltip.Provider>
   );
