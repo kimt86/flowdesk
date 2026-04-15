@@ -5,47 +5,93 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { Todo, TodoStatus } from "@/lib/types";
-import { Plus, RefreshCw, ArrowRight, ChevronDown, FileText, Pencil, Trash2, Search, Tag, CalendarPlus, CalendarMinus, Archive } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  ArrowRight,
+  ChevronDown,
+  FileText,
+  Pencil,
+  Trash2,
+  Search,
+  Tag as TagIcon,
+  CalendarPlus,
+  CalendarMinus,
+  Archive,
+} from "lucide-react";
+import {
+  Button,
+  Card,
+  Input,
+  InputGroup,
+  InputLabel,
+  Tag,
+  Textarea,
+} from "@/components/ui";
 
-const COLUMNS: { id: TodoStatus; label: string; headerClass: string; dotColor: string }[] = [
-  { id: "todo",        label: "할 일",  headerClass: "border-gray-300",  dotColor: "bg-gray-400"  },
-  { id: "in-progress", label: "진행중", headerClass: "border-blue-400",  dotColor: "bg-blue-500"  },
-  { id: "blocked",     label: "보류",   headerClass: "border-red-400",   dotColor: "bg-red-500"   },
-  { id: "done",        label: "완료",   headerClass: "border-green-400", dotColor: "bg-green-500" },
+const COLUMNS: { id: TodoStatus; label: string }[] = [
+  { id: "todo",        label: "할 일"  },
+  { id: "in-progress", label: "진행중" },
+  { id: "blocked",     label: "보류"   },
+  { id: "done",        label: "완료"   },
 ];
 
-const PRIORITY_LEFT_BORDER: Record<string, string> = {
-  high:   "border-l-red-500",
-  medium: "border-l-yellow-400",
-  low:    "border-l-gray-300",
+const PRIORITY_TAG_TONE: Record<
+  Todo["priority"],
+  "danger" | "warn" | "default"
+> = {
+  high: "danger",
+  medium: "warn",
+  low: "default",
 };
 
-const PRIORITY_BADGE: Record<string, string> = {
-  high:   "bg-red-100 text-red-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  low:    "bg-gray-100 text-gray-500",
-};
-
-const PRIORITY_LABEL: Record<string, string> = {
-  high: "긴급", medium: "보통", low: "낮음",
+const PRIORITY_LABEL: Record<Todo["priority"], string> = {
+  high: "긴급",
+  medium: "보통",
+  low: "낮음",
 };
 
 const NEXT_STATUS: Record<TodoStatus, TodoStatus | null> = {
-  "todo": "in-progress", "in-progress": "done", "blocked": "in-progress", "done": null,
+  todo: "in-progress",
+  "in-progress": "done",
+  blocked: "in-progress",
+  done: null,
 };
 
 const NEXT_STATUS_LABEL: Record<string, string> = {
-  "in-progress": "시작", "done": "완료",
+  "in-progress": "시작",
+  done: "완료",
 };
 
-type EditFields = { content: string; priority: Todo["priority"]; category: string; dueDate: string; tags: string; memo: string };
+const CATEGORY_OPTIONS = [
+  "@개발",
+  "@회의",
+  "@문서",
+  "@보고",
+  "@팀운영",
+  "@기타",
+];
+
+type EditFields = {
+  content: string;
+  priority: Todo["priority"];
+  category: string;
+  dueDate: string;
+  tags: string;
+  memo: string;
+};
 
 export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
   const router = useRouter();
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<EditFields>({
-    content: "", priority: "medium", category: "@개발", dueDate: "", tags: "", memo: "",
+    content: "",
+    priority: "medium",
+    category: "@개발",
+    dueDate: "",
+    tags: "",
+    memo: "",
   });
   const [refreshing, setRefreshing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,7 +101,9 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   async function handleStatusChange(todo: Todo, newStatus: TodoStatus) {
-    setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, status: newStatus } : t)));
+    setTodos((prev) =>
+      prev.map((t) => (t.id === todo.id ? { ...t, status: newStatus } : t)),
+    );
     const res = await fetch(`/api/todos/${todo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -94,7 +142,9 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
   async function handleSendToToday(todo: Todo) {
     if (todo.tags.includes("today")) return;
     const newTags = [...todo.tags, "today"];
-    setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, tags: newTags } : t)));
+    setTodos((prev) =>
+      prev.map((t) => (t.id === todo.id ? { ...t, tags: newTags } : t)),
+    );
     const res = await fetch(`/api/todos/${todo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -112,7 +162,9 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
   async function handleRemoveFromToday(todo: Todo) {
     if (!todo.tags.includes("today")) return;
     const newTags = todo.tags.filter((t) => t !== "today");
-    setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, tags: newTags } : t)));
+    setTodos((prev) =>
+      prev.map((t) => (t.id === todo.id ? { ...t, tags: newTags } : t)),
+    );
     const res = await fetch(`/api/todos/${todo.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -136,7 +188,6 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
       body: JSON.stringify({ lineIndex: todo.lineIndex }),
     });
     if (res.ok) {
-      // 보관 후 todos 재동기화
       const todosRes = await fetch("/api/todos");
       if (todosRes.ok) {
         const data = await todosRes.json();
@@ -147,7 +198,6 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
   }
 
   async function handleDelete(todo: Todo) {
-    // 즉시 제거 (optimistic)
     setConfirmDeleteId(null);
     setTodos((prev) => prev.filter((t) => t.id !== todo.id));
     const res = await fetch(`/api/todos/${todo.id}`, { method: "DELETE" });
@@ -179,14 +229,23 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
         priority: addForm.priority,
         category: addForm.category,
         dueDate: addForm.dueDate || undefined,
-        tags: addForm.tags ? addForm.tags.split(/\s+/).filter(Boolean) : undefined,
+        tags: addForm.tags
+          ? addForm.tags.split(/\s+/).filter(Boolean)
+          : undefined,
         memo: addForm.memo || undefined,
       }),
     });
     if (res.ok) {
       const data = await res.json();
       setTodos(data.todos);
-      setAddForm({ content: "", priority: "medium", category: "@개발", dueDate: "", tags: "", memo: "" });
+      setAddForm({
+        content: "",
+        priority: "medium",
+        category: "@개발",
+        dueDate: "",
+        tags: "",
+        memo: "",
+      });
       setShowAddForm(false);
       router.refresh();
     }
@@ -203,176 +262,235 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
     .map(([tag]) => tag);
 
   const filteredTodos = todos.filter((t) => {
-    if (selectedTags.length > 0 && !t.tags.some((tag) => selectedTags.includes(tag))) return false;
+    if (
+      selectedTags.length > 0 &&
+      !t.tags.some((tag) => selectedTags.includes(tag))
+    )
+      return false;
     if (query) {
       const q = query.toLowerCase();
-      if (!t.content.toLowerCase().includes(q) && !t.tags.some((tag) => tag.toLowerCase().includes(q)) && !t.category.toLowerCase().includes(q) && !(t.memo ?? "").toLowerCase().includes(q)) return false;
+      if (
+        !t.content.toLowerCase().includes(q) &&
+        !t.tags.some((tag) => tag.toLowerCase().includes(q)) &&
+        !t.category.toLowerCase().includes(q) &&
+        !(t.memo ?? "").toLowerCase().includes(q)
+      )
+        return false;
     }
     return true;
   });
 
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   }
 
   const activeTodos = filteredTodos.filter((t) => t.status !== "done").length;
-  const doneTodos   = filteredTodos.filter((t) => t.status === "done").length;
+  const doneTodos = filteredTodos.filter((t) => t.status === "done").length;
 
   return (
-    <div className="p-4 md:p-6 h-full flex flex-col">
-      {/* 헤더 */}
-      <div className="flex items-center justify-between gap-2 mb-5 flex-wrap">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">할 일</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            진행 중 {activeTodos}개 &middot; 완료 {doneTodos}개
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
-            새로고침
-          </button>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-1.5 text-sm bg-primary text-primary-foreground px-4 py-1.5 rounded-md hover:bg-primary/90 transition-colors font-medium"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            할 일 추가
-          </button>
-        </div>
+    <div className="p-lg md:p-2xl h-full flex flex-col">
+      {/* Utility line */}
+      <div className="flex justify-end mb-xs">
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          aria-label="새로고침"
+          title="새로고침"
+          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors duration-short ease-out-flow rounded-sm disabled:opacity-40"
+        >
+          <RefreshCw
+            className={cn("w-3.5 h-3.5", refreshing && "animate-spin")}
+            strokeWidth={1.5}
+          />
+        </button>
       </div>
 
+      {/* Masthead */}
+      <header className="border-b-[3px] border-foreground pb-sm flex items-end justify-between gap-md flex-wrap">
+        <div>
+          <h1 className="font-display text-3xl leading-none tracking-display">
+            할 일
+          </h1>
+          <p className="mono-meta mt-2">
+            진행중 <span className="text-foreground tabular-nums">{activeTodos}</span>
+            {"  · "}
+            완료 <span className="text-foreground tabular-nums">{doneTodos}</span>
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setShowAddForm((v) => !v)}
+        >
+          <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+          할 일 추가
+        </Button>
+      </header>
+
       {/* 검색 */}
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
+      <div className="relative mt-md">
+        <Search
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+          strokeWidth={1.5}
+        />
+        <Input
           type="text"
-          placeholder="할 일 검색 (제목, 태그, 메모)..."
+          placeholder="할 일 검색 (제목, 태그, 메모)…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+          className="pl-6"
         />
       </div>
 
       {/* 태그 필터 */}
       {allTags.length > 0 && (
-        <div className="mb-4 flex items-start gap-2">
-          <Tag className="w-3.5 h-3.5 text-muted-foreground mt-1 flex-shrink-0" />
+        <div className="mt-md flex items-start gap-sm">
+          <TagIcon
+            className="w-3.5 h-3.5 text-muted-foreground mt-1 shrink-0"
+            strokeWidth={1.5}
+          />
           <div className="flex flex-wrap gap-1.5">
-            <button
+            <FilterChip
+              active={selectedTags.length === 0}
               onClick={() => setSelectedTags([])}
-              className={cn(
-                "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                selectedTags.length === 0
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-muted-foreground border-border hover:border-primary/40"
-              )}
-            >
-              전체
-            </button>
+              label="전체"
+            />
             {allTags.map((tag) => (
-              <button
+              <FilterChip
                 key={tag}
+                active={selectedTags.includes(tag)}
                 onClick={() => toggleTag(tag)}
-                className={cn(
-                  "text-xs px-2.5 py-1 rounded-full border transition-colors",
-                  selectedTags.includes(tag)
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background text-muted-foreground border-border hover:border-primary/40"
-                )}
-              >
-                {tag}
-                <span className="ml-1 opacity-60">{tagCounts[tag]}</span>
-              </button>
+                label={tag}
+                count={tagCounts[tag]}
+              />
             ))}
           </div>
         </div>
       )}
 
-      {/* 필터 결과 */}
+      {/* 필터 결과 수 */}
       {(selectedTags.length > 0 || query) && (
-        <p className="text-xs text-muted-foreground mb-3">
-          {filteredTodos.length}개 표시 중 (전체 {todos.length}개)
+        <p className="mono-meta mt-xs">
+          <span className="tabular-nums">{filteredTodos.length}</span>{" "}
+          개 표시 / 전체 <span className="tabular-nums">{todos.length}</span>
         </p>
       )}
 
       {/* 추가 폼 */}
       {showAddForm && (
-        <form onSubmit={handleAddTodo} className="bg-card border border-border rounded-lg p-4 mb-5 shadow-sm">
-          <input
-            type="text"
-            placeholder="할 일 내용을 입력하세요..."
-            value={addForm.content}
-            onChange={(e) => setAddForm({ ...addForm, content: e.target.value })}
-            className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 mb-3"
-            autoFocus
-          />
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:flex-wrap">
-            <PrioritySelect value={addForm.priority} onChange={(v) => setAddForm({ ...addForm, priority: v })} />
-            <CategorySelect value={addForm.category} onChange={(v) => setAddForm({ ...addForm, category: v })} />
-            <input
-              type="date"
-              value={addForm.dueDate}
-              onChange={(e) => setAddForm({ ...addForm, dueDate: e.target.value })}
-              className="text-sm px-3 py-1.5 border border-border rounded-md bg-background w-full sm:w-auto"
-            />
-          </div>
-          <div className="mt-2">
-            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">태그</label>
-            <input
-              type="text"
-              placeholder="공백으로 구분 (예: 배차 설계)"
-              value={addForm.tags}
-              onChange={(e) => setAddForm({ ...addForm, tags: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
-          </div>
-          <div className="mt-2">
-            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">메모</label>
-            <textarea
-              placeholder="선택사항"
-              rows={2}
-              value={addForm.memo}
-              onChange={(e) => setAddForm({ ...addForm, memo: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
-            />
-          </div>
-          <div className="flex gap-2 justify-end mt-3">
-            <button type="button" onClick={() => setShowAddForm(false)}
-              className="text-sm px-4 py-1.5 border border-border rounded-md hover:bg-muted transition-colors">
-              취소
-            </button>
-            <button type="submit"
-              className="text-sm px-4 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium">
-              추가
-            </button>
-          </div>
-        </form>
+        <Card className="mt-md">
+          <form onSubmit={handleAddTodo} className="space-y-md">
+            <InputGroup>
+              <InputLabel>할 일</InputLabel>
+              <Input
+                placeholder="할 일 내용을 입력하세요…"
+                value={addForm.content}
+                onChange={(e) =>
+                  setAddForm({ ...addForm, content: e.target.value })
+                }
+                autoFocus
+              />
+            </InputGroup>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+              <InputGroup>
+                <InputLabel>우선순위</InputLabel>
+                <NativeSelect
+                  value={addForm.priority}
+                  onChange={(v) =>
+                    setAddForm({
+                      ...addForm,
+                      priority: v as Todo["priority"],
+                    })
+                  }
+                  options={[
+                    { value: "high", label: "긴급" },
+                    { value: "medium", label: "보통" },
+                    { value: "low", label: "낮음" },
+                  ]}
+                />
+              </InputGroup>
+              <InputGroup>
+                <InputLabel>카테고리</InputLabel>
+                <NativeSelect
+                  value={addForm.category}
+                  onChange={(v) => setAddForm({ ...addForm, category: v })}
+                  options={CATEGORY_OPTIONS.map((c) => ({
+                    value: c,
+                    label: c,
+                  }))}
+                />
+              </InputGroup>
+              <InputGroup>
+                <InputLabel>마감</InputLabel>
+                <Input
+                  type="date"
+                  value={addForm.dueDate}
+                  onChange={(e) =>
+                    setAddForm({ ...addForm, dueDate: e.target.value })
+                  }
+                />
+              </InputGroup>
+            </div>
+            <InputGroup>
+              <InputLabel>태그</InputLabel>
+              <Input
+                placeholder="공백으로 구분"
+                value={addForm.tags}
+                onChange={(e) =>
+                  setAddForm({ ...addForm, tags: e.target.value })
+                }
+              />
+            </InputGroup>
+            <InputGroup>
+              <InputLabel>메모</InputLabel>
+              <Textarea
+                placeholder="선택사항"
+                rows={2}
+                value={addForm.memo}
+                onChange={(e) =>
+                  setAddForm({ ...addForm, memo: e.target.value })
+                }
+              />
+            </InputGroup>
+            <div className="flex gap-xs justify-end">
+              <Button
+                size="sm"
+                variant="secondary"
+                type="button"
+                onClick={() => setShowAddForm(false)}
+              >
+                취소
+              </Button>
+              <Button size="sm" type="submit">
+                추가
+              </Button>
+            </div>
+          </form>
+        </Card>
       )}
 
       {/* 칸반 보드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 min-h-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-md flex-1 min-h-0 mt-lg">
         {COLUMNS.map((col) => {
           const colTodos = filteredTodos.filter((t) => t.status === col.id);
           return (
-            <div key={col.id} className="flex flex-col gap-2 min-h-0">
-              <div className={cn("flex items-center gap-2 px-3 py-2 rounded-md border-l-4 bg-muted/50", col.headerClass)}>
-                <span className="text-sm font-semibold">{col.label}</span>
-                <span className="ml-auto text-xs font-medium text-muted-foreground bg-background px-2 py-0.5 rounded-full border border-border">
+            <div key={col.id} className="flex flex-col gap-xs min-h-0">
+              <div className="flex items-baseline justify-between pb-2 border-b-2 border-foreground">
+                <h2 className="font-display text-md tracking-tight text-foreground">
+                  {col.label}
+                </h2>
+                <span className="mono-meta tabular-nums">
                   {colTodos.length}
                 </span>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 pb-2">
+              <div className="flex-1 overflow-y-auto space-y-xs pr-0.5 pb-sm">
                 {colTodos.length === 0 && (
-                  <div className="border-2 border-dashed border-border rounded-lg py-8 flex items-center justify-center">
-                    <p className="text-xs text-muted-foreground">항목 없음</p>
+                  <div className="border border-dashed border-border py-xl flex items-center justify-center">
+                    <p className="mono-meta !normal-case !tracking-snug">
+                      항목 없음
+                    </p>
                   </div>
                 )}
                 {colTodos.map((todo) => (
@@ -405,28 +523,69 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
   );
 }
 
-function PrioritySelect({ value, onChange }: { value: string; onChange: (v: Todo["priority"]) => void }) {
+// ============================================================
+// FilterChip — 태그 필터 토글
+// ============================================================
+function FilterChip({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count?: number;
+}) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value as Todo["priority"])}
-      className="text-sm px-3 py-1.5 border border-border rounded-md bg-background">
-      <option value="high">🔴 긴급</option>
-      <option value="medium">🟡 보통</option>
-      <option value="low">🟢 낮음</option>
-    </select>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 font-mono text-2xs uppercase tracking-meta px-2 py-0.5 border rounded-none transition-colors duration-short ease-out-flow",
+        active
+          ? "bg-foreground text-background border-foreground"
+          : "bg-transparent text-ink-soft border-border-strong hover:border-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+      {count !== undefined && (
+        <span className="opacity-60 tabular-nums">{count}</span>
+      )}
+    </button>
   );
 }
 
-function CategorySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// ============================================================
+// NativeSelect — underline-only style select
+// ============================================================
+function NativeSelect<T extends string>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: Array<{ value: T; label: string }>;
+}) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="text-sm px-3 py-1.5 border border-border rounded-md bg-background">
-      {["@개발", "@회의", "@문서", "@보고", "@팀운영", "@기타"].map((c) => (
-        <option key={c} value={c}>{c}</option>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as T)}
+      className="w-full bg-transparent border-0 border-b border-border-strong px-0 py-2 text-base text-foreground focus-visible:outline-none focus:border-accent transition-colors duration-short ease-out-flow appearance-none cursor-pointer"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
       ))}
     </select>
   );
 }
 
+// ============================================================
+// TodoCard — single task card
+// ============================================================
 function TodoCard({
   todo,
   isEditing,
@@ -464,6 +623,7 @@ function TodoCard({
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const isOnToday = todo.tags.includes("today");
+  const urgent = todo.priority === "high";
   const [editForm, setEditForm] = useState<EditFields>({
     content: todo.content,
     priority: todo.priority,
@@ -482,217 +642,292 @@ function TodoCard({
       tags: todo.tags.join(" "),
       memo: todo.memo ?? "",
     });
-  }, [todo.id, todo.content, todo.priority, todo.category, todo.dueDate, todo.tags, todo.memo]);
+  }, [
+    todo.id,
+    todo.content,
+    todo.priority,
+    todo.category,
+    todo.dueDate,
+    todo.tags,
+    todo.memo,
+  ]);
 
   const nextStatus = NEXT_STATUS[todo.status];
 
-  // 편집 폼 모드
+  // ==================== Edit mode ====================
   if (isEditing) {
     return (
-      <div className={cn("bg-card border border-primary/50 rounded-lg p-3 shadow-sm border-l-4", PRIORITY_LEFT_BORDER[todo.priority])}>
-        <input
-          type="text"
-          value={editForm.content}
-          onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-          className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 mb-2"
-          autoFocus
-        />
-        <div className="flex flex-col gap-1.5 mb-2">
-          <div className="flex gap-1.5 flex-wrap">
-            <PrioritySelect value={editForm.priority} onChange={(v) => setEditForm({ ...editForm, priority: v })} />
-            <CategorySelect value={editForm.category} onChange={(v) => setEditForm({ ...editForm, category: v })} />
-          </div>
-          <input
-            type="date"
-            value={editForm.dueDate}
-            onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
-            className="text-sm px-2 py-1.5 border border-border rounded-md bg-background w-full"
+      <Card urgent={urgent} className="space-y-sm">
+        <InputGroup>
+          <InputLabel>할 일</InputLabel>
+          <Input
+            value={editForm.content}
+            onChange={(e) =>
+              setEditForm({ ...editForm, content: e.target.value })
+            }
+            autoFocus
           />
-          <div>
-            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">태그</label>
-            <input
-              type="text"
-              placeholder="공백으로 구분 (예: 배차 설계)"
-              value={editForm.tags}
-              onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
-              className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
-            />
+        </InputGroup>
+        <div className="grid grid-cols-1 gap-sm">
+          <div className="grid grid-cols-2 gap-sm">
+            <InputGroup>
+              <InputLabel>우선순위</InputLabel>
+              <NativeSelect
+                value={editForm.priority}
+                onChange={(v) =>
+                  setEditForm({
+                    ...editForm,
+                    priority: v as Todo["priority"],
+                  })
+                }
+                options={[
+                  { value: "high", label: "긴급" },
+                  { value: "medium", label: "보통" },
+                  { value: "low", label: "낮음" },
+                ]}
+              />
+            </InputGroup>
+            <InputGroup>
+              <InputLabel>카테고리</InputLabel>
+              <NativeSelect
+                value={editForm.category}
+                onChange={(v) => setEditForm({ ...editForm, category: v })}
+                options={CATEGORY_OPTIONS.map((c) => ({
+                  value: c,
+                  label: c,
+                }))}
+              />
+            </InputGroup>
           </div>
-          <div>
-            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">메모</label>
-            <textarea
+          <InputGroup>
+            <InputLabel>마감</InputLabel>
+            <Input
+              type="date"
+              value={editForm.dueDate}
+              onChange={(e) =>
+                setEditForm({ ...editForm, dueDate: e.target.value })
+              }
+            />
+          </InputGroup>
+          <InputGroup>
+            <InputLabel>태그</InputLabel>
+            <Input
+              placeholder="공백으로 구분"
+              value={editForm.tags}
+              onChange={(e) =>
+                setEditForm({ ...editForm, tags: e.target.value })
+              }
+            />
+          </InputGroup>
+          <InputGroup>
+            <InputLabel>메모</InputLabel>
+            <Textarea
               placeholder="선택사항"
               rows={2}
               value={editForm.memo}
-              onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
-              className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+              onChange={(e) =>
+                setEditForm({ ...editForm, memo: e.target.value })
+              }
             />
-          </div>
+          </InputGroup>
         </div>
-        <div className="flex gap-1.5 justify-end">
-          <button onClick={onEditCancel}
-            className="text-xs px-3 py-2 border border-border rounded-md hover:bg-muted transition-colors">
+        <div className="flex gap-xs justify-end pt-xs">
+          <Button size="sm" variant="secondary" onClick={onEditCancel}>
             취소
-          </button>
-          <button onClick={() => onEditSave(editForm)}
-            className="text-xs px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium">
+          </Button>
+          <Button size="sm" onClick={() => onEditSave(editForm)}>
             저장
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  // 삭제 확인 모드
+  // ==================== Confirm delete ====================
   if (isConfirmingDelete) {
     return (
-      <div className={cn("bg-card border border-red-300 rounded-lg p-3 shadow-sm border-l-4", PRIORITY_LEFT_BORDER[todo.priority])}>
-        <p className="text-sm font-medium leading-snug mb-1 truncate">{todo.content}</p>
-        <p className="text-xs text-muted-foreground mb-3">이 항목을 삭제할까요?</p>
-        <div className="flex gap-1.5 justify-end">
-          <button onClick={onDeleteCancel}
-            className="text-xs px-3 py-1 border border-border rounded-md hover:bg-muted transition-colors">
+      <Card urgent={urgent} className="border-danger">
+        <p className="text-sm font-medium leading-snug truncate mb-1">
+          {todo.content}
+        </p>
+        <p className="text-xs text-muted-foreground mb-sm">
+          이 항목을 삭제할까요?
+        </p>
+        <div className="flex gap-xs justify-end">
+          <Button size="sm" variant="secondary" onClick={onDeleteCancel}>
             취소
-          </button>
-          <button onClick={onDeleteConfirm}
-            className="text-xs px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-medium">
+          </Button>
+          <Button size="sm" variant="danger" onClick={onDeleteConfirm}>
             삭제
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  // 보관 확인 모드
+  // ==================== Confirm archive ====================
   if (isConfirmingArchive) {
     return (
-      <div className={cn("bg-card border border-purple-300 rounded-lg p-3 shadow-sm border-l-4", PRIORITY_LEFT_BORDER[todo.priority])}>
-        <p className="text-sm font-medium leading-snug mb-1 truncate">{todo.content}</p>
-        <p className="text-xs text-muted-foreground mb-3">보관함으로 이동할까요? 보관함에서 언제든 복원할 수 있습니다.</p>
-        <div className="flex gap-1.5 justify-end">
-          <button onClick={onArchiveCancel}
-            className="text-xs px-3 py-1 border border-border rounded-md hover:bg-muted transition-colors">
+      <Card urgent={urgent}>
+        <p className="text-sm font-medium leading-snug truncate mb-1">
+          {todo.content}
+        </p>
+        <p className="text-xs text-muted-foreground mb-sm leading-relaxed">
+          보관함으로 이동할까요? 언제든 복원할 수 있습니다.
+        </p>
+        <div className="flex gap-xs justify-end">
+          <Button size="sm" variant="secondary" onClick={onArchiveCancel}>
             취소
-          </button>
-          <button onClick={onArchiveConfirm}
-            className="text-xs px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors font-medium">
+          </Button>
+          <Button size="sm" variant="secondary" onClick={onArchiveConfirm}>
             보관
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
     );
   }
 
-  // 일반 카드 모드
+  // ==================== Default view ====================
   return (
-    <div className={cn(
-      "group bg-card border border-border rounded-lg p-3 shadow-sm border-l-4 transition-shadow hover:shadow-md",
-      PRIORITY_LEFT_BORDER[todo.priority]
-    )}>
-      {/* 내용 + 편집/삭제 버튼 */}
-      <div className="flex items-start gap-1.5 mb-2.5">
-        <p className="text-sm font-medium leading-snug flex-1">{todo.content}</p>
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+    <Card urgent={urgent} className="group p-sm">
+      {/* 제목 + 호버 액션 */}
+      <div className="flex items-start gap-xs mb-sm">
+        <p
+          className={cn(
+            "text-sm font-medium leading-snug flex-1 ink-bleed",
+            todo.status === "done" && "text-muted-foreground",
+          )}
+          data-done={todo.status === "done"}
+        >
+          {todo.content}
+        </p>
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-short ease-out-flow shrink-0">
           {todo.status !== "done" && !isOnToday && (
-            <button onClick={onSendToToday} title="오늘 할 일로 보내기"
-              className="p-2 rounded hover:bg-blue-50 text-muted-foreground hover:text-blue-600 transition-colors">
-              <CalendarPlus className="w-3.5 h-3.5" />
-            </button>
+            <IconButton label="오늘 할 일로 보내기" onClick={onSendToToday}>
+              <CalendarPlus className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </IconButton>
           )}
           {todo.status !== "done" && isOnToday && (
-            <button onClick={onRemoveFromToday} title="오늘에서 제외하기"
-              className="p-2 rounded hover:bg-amber-50 text-amber-600 transition-colors">
-              <CalendarMinus className="w-3.5 h-3.5" />
-            </button>
+            <IconButton
+              label="오늘에서 제외"
+              onClick={onRemoveFromToday}
+              hoverTone="warn"
+            >
+              <CalendarMinus className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </IconButton>
           )}
           {todo.status === "done" && (
-            <button onClick={onArchiveStart} title="보관함으로 이동"
-              className="p-2 rounded hover:bg-purple-50 text-muted-foreground hover:text-purple-600 transition-colors">
-              <Archive className="w-3.5 h-3.5" />
-            </button>
+            <IconButton label="보관함으로" onClick={onArchiveStart}>
+              <Archive className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </IconButton>
           )}
-          <button onClick={onEditStart} title="편집"
-            className="p-2 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onDeleteStart} title="삭제"
-            className="p-2 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors">
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <IconButton label="편집" onClick={onEditStart}>
+            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </IconButton>
+          <IconButton label="삭제" onClick={onDeleteStart} hoverTone="danger">
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </IconButton>
         </div>
       </div>
 
-      {/* 메타 정보 */}
-      <div className="flex items-center gap-1.5 flex-wrap mb-3">
-        <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", PRIORITY_BADGE[todo.priority])}>
+      {/* 메타: 우선순위 · 카테고리 · 마감 */}
+      <div className="flex items-center gap-xs flex-wrap mb-xs">
+        <Tag tone={PRIORITY_TAG_TONE[todo.priority]}>
           {PRIORITY_LABEL[todo.priority]}
-        </span>
-        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+        </Tag>
+        <span className="mono-meta !normal-case !tracking-snug text-xs text-ink-soft">
           {todo.category}
         </span>
         {todo.dueDate && (
-          <span className="text-xs text-muted-foreground ml-auto">마감 {todo.dueDate}</span>
-        )}
-        {todo.tags.length > 0 && (
-          <>
-            {todo.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                #{tag}
-              </span>
-            ))}
-          </>
+          <span className="mono-meta !normal-case !tracking-snug text-xs ml-auto">
+            마감 {todo.dueDate}
+          </span>
         )}
       </div>
 
+      {/* 태그 라인 */}
+      {todo.tags.length > 0 && (
+        <div className="flex flex-wrap gap-x-sm gap-y-0.5 mb-xs">
+          {todo.tags.map((tag) => (
+            <span
+              key={tag}
+              className="mono-meta !normal-case !tracking-snug text-accent text-xs"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* 메모 */}
       {todo.memo && (
-        <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2.5 py-1.5 mb-2.5 border-l-2 border-muted-foreground/30">
+        <div className="text-xs text-ink-soft bg-surface-2 border-l-2 border-border-strong px-2.5 py-1.5 mb-xs leading-relaxed whitespace-pre-wrap">
           {todo.memo}
         </div>
       )}
 
-      {/* 관련 문서 참조 */}
+      {/* 문서 참조 */}
       {todo.docRefs.length > 0 && (
-        <div className="flex flex-col gap-1 mb-2.5">
+        <div className="flex flex-col gap-1 mb-xs">
           {todo.docRefs.map((ref, i) => (
-            <Link key={i} href={`/docs/view?path=${encodeURIComponent(ref.path)}`}
-              className="flex items-center gap-1.5 text-xs text-primary hover:underline truncate">
-              <FileText className="w-3 h-3 flex-shrink-0" />
+            <Link
+              key={i}
+              href={`/docs/view?path=${encodeURIComponent(ref.path)}`}
+              className="inline-flex items-center gap-1.5 text-xs text-foreground hover:text-accent transition-colors duration-short ease-out-flow truncate"
+            >
+              <FileText className="w-3 h-3 shrink-0" strokeWidth={1.5} />
               {ref.issueId && (
-                <span className="font-mono bg-primary/10 text-primary px-1 rounded flex-shrink-0">{ref.issueId}</span>
+                <span className="font-mono text-accent">{ref.issueId}</span>
               )}
-              <span className="truncate text-muted-foreground">{ref.path.split(/[\\/]/).pop()}</span>
+              <span className="truncate text-muted-foreground">
+                {ref.path.split(/[\\/]/).pop()}
+              </span>
             </Link>
           ))}
         </div>
       )}
 
       {/* 액션 영역 */}
-      <div className="flex items-center gap-1.5 pt-2 border-t border-border/50">
+      <div className="flex items-center gap-xs pt-xs border-t border-border">
         {nextStatus && (
-          <button onClick={() => onStatusChange(todo, nextStatus)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted px-2 py-1 rounded transition-colors font-medium">
-            <ArrowRight className="w-3 h-3" />
+          <button
+            type="button"
+            onClick={() => onStatusChange(todo, nextStatus)}
+            className="inline-flex items-center gap-1 mono-meta !normal-case !tracking-snug px-1.5 py-0.5 text-ink-soft hover:text-accent transition-colors duration-short ease-out-flow"
+          >
+            <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
             {NEXT_STATUS_LABEL[nextStatus] ?? nextStatus}
           </button>
         )}
-
         <div className="relative ml-auto">
-          <button onClick={() => setShowMenu(!showMenu)}
-            className="flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted px-2 py-1 rounded transition-colors"
-            aria-label="상태 변경">
+          <button
+            type="button"
+            onClick={() => setShowMenu((v) => !v)}
+            className="inline-flex items-center gap-1 mono-meta !normal-case !tracking-snug px-1.5 py-0.5 text-ink-soft hover:text-foreground hover:bg-surface-2 transition-colors duration-short ease-out-flow"
+            aria-label="상태 변경"
+          >
             이동
-            <ChevronDown className="w-3 h-3" />
+            <ChevronDown className="w-3 h-3" strokeWidth={1.5} />
           </button>
           {showMenu && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-              <div className="absolute right-0 bottom-full mb-1 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-36">
-                <p className="text-[10px] text-muted-foreground px-3 py-1 font-medium uppercase tracking-wide">이동할 상태</p>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowMenu(false)}
+                aria-hidden
+              />
+              <div className="absolute right-0 bottom-full mb-1 z-20 bg-surface border border-border-strong min-w-36 py-1 rounded-sm shadow-[0_8px_24px_rgba(20,18,16,0.10)]">
+                <p className="mono-meta px-sm py-1">이동할 상태</p>
                 {COLUMNS.filter((c) => c.id !== todo.status).map((s) => (
-                  <button key={s.id} onClick={() => { onStatusChange(todo, s.id); setShowMenu(false); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
-                    <span className={cn("w-2 h-2 rounded-full flex-shrink-0", s.dotColor)} />
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => {
+                      onStatusChange(todo, s.id);
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-sm py-2 text-sm hover:bg-surface-2 transition-colors duration-short ease-out-flow text-foreground"
+                  >
                     {s.label}
                   </button>
                 ))}
@@ -701,6 +936,39 @@ function TodoCard({
           )}
         </div>
       </div>
-    </div>
+    </Card>
+  );
+}
+
+function IconButton({
+  label,
+  onClick,
+  children,
+  hoverTone,
+}: {
+  label: string;
+  onClick: () => void;
+  children: React.ReactNode;
+  hoverTone?: "warn" | "danger";
+}) {
+  const hoverClass =
+    hoverTone === "danger"
+      ? "hover:text-danger hover:bg-surface-2"
+      : hoverTone === "warn"
+        ? "hover:text-warn hover:bg-surface-2"
+        : "hover:text-foreground hover:bg-surface-2";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      className={cn(
+        "p-1.5 text-muted-foreground transition-colors duration-short ease-out-flow rounded-sm",
+        hoverClass,
+      )}
+    >
+      {children}
+    </button>
   );
 }
