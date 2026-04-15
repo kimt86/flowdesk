@@ -6,13 +6,19 @@ import { usePathname } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   LayoutDashboard,
   CheckSquare,
+  CalendarCheck,
   FileText,
   CalendarRange,
   Calendar,
   Presentation,
+  Lightbulb,
+  FolderKanban,
+  Briefcase,
+  Archive,
   Menu,
   X,
   PanelLeftClose,
@@ -20,8 +26,13 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/",               label: "홈",          icon: LayoutDashboard },
-  { href: "/todos",          label: "할 일",       icon: CheckSquare     },
+  { href: "/",               label: "작업 현황",   icon: LayoutDashboard },
+  { href: "/today",          label: "오늘 할 일",  icon: CalendarCheck   },
+  { href: "/todos",          label: "모든 할 일",  icon: CheckSquare     },
+  { href: "/archive",        label: "보관함",      icon: Archive         },
+  { href: "/projects",       label: "프로젝트",    icon: FolderKanban    },
+  { href: "/work",           label: "작업",   icon: Briefcase       },
+  { href: "/ideas",          label: "아이디어",    icon: Lightbulb       },
   { href: "/meetings",       label: "회의록",      icon: Calendar        },
   { href: "/presentations",  label: "발표자료",    icon: Presentation    },
   { href: "/docs",           label: "문서",        icon: FileText        },
@@ -79,14 +90,10 @@ function NavLinks({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
 }
 
 function Logo({ collapsed }: { collapsed?: boolean }) {
+  if (collapsed) return null;
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-        <span className="text-primary-foreground text-xs font-bold tracking-tight">FD</span>
-      </div>
-      {!collapsed && (
-        <span className="text-sm font-bold text-foreground tracking-tight">FlowDesk</span>
-      )}
+    <div className="flex items-center">
+      <span className="text-sm font-bold text-foreground tracking-tight">FlowDesk</span>
     </div>
   );
 }
@@ -94,11 +101,12 @@ function Logo({ collapsed }: { collapsed?: boolean }) {
 function StatusDot({ collapsed }: { collapsed?: boolean }) {
   if (collapsed) return null;
   return (
-    <div className="px-4 py-3 border-t border-border">
+    <div className="px-4 py-3 border-t border-border space-y-3">
       <div className="flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+        <div className="w-1.5 h-1.5 rounded-full bg-success" />
         <p className="text-xs text-muted-foreground">연동됨</p>
       </div>
+      <ThemeToggle className="w-full justify-center" />
     </div>
   );
 }
@@ -163,7 +171,7 @@ export function Sidebar() {
       {/* 데스크탑 사이드바 (md 이상에서만 표시) */}
       <aside
         className={cn(
-          "hidden md:flex min-h-screen bg-background border-r border-border flex-col shrink-0 transition-all duration-200",
+          "hidden md:flex sticky top-0 h-screen overflow-y-auto bg-background border-r border-border flex-col shrink-0 transition-all duration-200",
           collapsed ? "w-14" : "w-52"
         )}
       >

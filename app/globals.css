@@ -2,62 +2,328 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * FlowDesk Design System v0.1 — 한지와 먹 · Hanji + Ink
+ * Full spec: /DESIGN.md
+ */
+
+/* ============================================================
+   Paperlogy — Korean newspaper display face (jsDelivr CDN).
+   Falls back to Noto Serif KR 900 if the CDN fails.
+   ============================================================ */
+@font-face {
+  font-family: "Paperlogy";
+  font-weight: 900;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/innoyouth/Paperlogy@1.0.3/fonts/webfonts/Paperlogy-9Black.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "Paperlogy";
+  font-weight: 700;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/innoyouth/Paperlogy@1.0.3/fonts/webfonts/Paperlogy-7Bold.woff2")
+    format("woff2");
+}
+
 @layer base {
+  /* ============================================================
+     한지 / Hanji — Light mode (default)
+     ============================================================ */
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
+    /* Surfaces */
+    --background: 42 40% 94%;            /* #F5F1E8 warm paper     */
+    --surface: 40 63% 97%;               /* #FBF8F1 card surface   */
+    --surface-2: 39 41% 90%;             /* #F0EADC section divide */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    /* Text (ink) */
+    --foreground: 30 9% 9%;              /* #1A1816 ink            */
+    --ink-soft: 30 10% 21%;              /* #3A3530                */
+    --muted-foreground: 36 8% 40%;       /* #6D685F                */
 
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
+    /* Borders */
+    --border: 40 26% 80%;                /* #D9D1C0 hairline       */
+    --border-strong: 37 21% 66%;         /* #B8AE99                */
+    --input: 40 26% 80%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    /* Accent — 단청 red */
+    --accent: 11 65% 48%;                /* #C9452B                */
+    --accent-soft: 12 56% 83%;           /* #EDC8BD                */
+    --accent-foreground: 40 63% 97%;
+    --ring: 11 65% 48%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    /* Primary = ink (buttons use ink, not accent) */
+    --primary: 30 9% 9%;
+    --primary-foreground: 40 63% 97%;
 
-    --accent: 210 40% 96%;
-    --accent-foreground: 222 47% 11%;
+    /* Secondary / muted surface */
+    --secondary: 39 41% 90%;
+    --secondary-foreground: 30 9% 9%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 221 83% 53%;
+    /* Card */
+    --card: 40 63% 97%;
+    --card-foreground: 30 9% 9%;
+
+    /* Muted surface token */
+    --muted: 39 41% 90%;
+
+    /* Semantic */
+    --success: 136 27% 33%;              /* #3D6A4A                */
+    --warn: 40 72% 42%;                  /* #B8861E                */
+    --danger: 10 65% 37%;                /* #9C3220                */
+    --destructive: 10 65% 37%;
+    --destructive-foreground: 40 63% 97%;
+
+    /* Radius — hierarchical, never uniform */
+    --radius-none: 0px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 8px;
+    --radius-full: 9999px;
+    --radius: 2px; /* shadcn compat — default small */
+
+    /* Grain opacity */
+    --grain-opacity: 0.025;
+  }
+
+  /* ============================================================
+     수묵 / Sumuk — Dark mode
+     ============================================================ */
+  :root[data-theme="dark"],
+  .dark {
+    --background: 30 10% 7%;             /* #141210                */
+    --surface: 26 13% 10%;               /* #1D1A17                */
+    --surface-2: 30 14% 13%;             /* #25211C                */
+
+    --foreground: 42 33% 89%;            /* #ECE6D9                */
+    --ink-soft: 38 19% 75%;              /* #CBC4B4                */
+    --muted-foreground: 37 7% 49%;       /* #857F74                */
+
+    --border: 26 11% 15%;                /* #2B2724                */
+    --border-strong: 31 12% 21%;         /* #3C362F                */
+    --input: 26 11% 15%;
+
+    --accent: 13 71% 58%;                /* #E06546                */
+    --accent-soft: 12 37% 21%;           /* #4A2A22                */
+    --accent-foreground: 30 10% 7%;
+    --ring: 13 71% 58%;
+
+    --primary: 42 33% 89%;
+    --primary-foreground: 30 10% 7%;
+
+    --secondary: 30 14% 13%;
+    --secondary-foreground: 42 33% 89%;
+
+    --card: 26 13% 10%;
+    --card-foreground: 42 33% 89%;
+
+    --muted: 30 14% 13%;
+
+    --success: 133 22% 54%;              /* #6FA37B                */
+    --warn: 39 66% 56%;                  /* #D9A347                */
+    --danger: 10 54% 52%;                /* #C95540                */
+    --destructive: 10 54% 52%;
+    --destructive-foreground: 30 10% 7%;
+
+    --grain-opacity: 0.02;
   }
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
+/* ============================================================
+   Base
+   ============================================================ */
 * {
   box-sizing: border-box;
 }
 
-/* 마크다운 문서 뷰어 스타일 */
+html {
+  color-scheme: light;
+}
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  font-family:
+    "Pretendard Variable",
+    "Pretendard",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans KR",
+    system-ui,
+    sans-serif;
+  font-feature-settings: "ss18", "tnum";
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
+    color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Very subtle paper grain — only on light mode, never on mockup-heavy routes */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' seed='7'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.9'/></svg>");
+  mix-blend-mode: multiply;
+}
+:root[data-theme="dark"] body::before {
+  mix-blend-mode: screen;
+}
+
+/* Selection uses 단청 red softly */
+::selection {
+  background: hsl(var(--accent) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Focus ring — single red, thin, square */
+:focus-visible {
+  outline: 2px solid hsl(var(--accent));
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Utility classes from the design system
+   ============================================================ */
+.font-display {
+  font-family: "Paperlogy", "Noto Serif KR", serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+.font-data {
+  font-family:
+    "IBM Plex Sans KR", "Pretendard Variable", "Pretendard", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.font-mono,
+.mono {
+  font-family:
+    "IBM Plex Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mono metadata — uppercase, open tracking, small */
+.mono-meta {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.6875rem; /* 11px */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairline rule — horizontal or vertical */
+.rule-h {
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+  margin: 0;
+}
+.rule-h-strong {
+  border: 0;
+  border-top: 3px solid hsl(var(--foreground));
+}
+.rule-accent {
+  border: 0;
+  border-top: 4px solid hsl(var(--accent));
+  width: 80px;
+}
+
+/* Brand seal — small red square with 印 glyph */
+.seal {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background: hsl(var(--accent));
+  position: relative;
+  flex-shrink: 0;
+}
+.seal::after {
+  content: "印";
+  position: absolute;
+  inset: 0;
+  font-family: "Noto Serif KR", serif;
+  font-size: 10px;
+  color: hsl(var(--surface));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+/* Ink-bleed — signature completion animation (apply via data-done) */
+.ink-bleed {
+  background: linear-gradient(to right, hsl(var(--accent)), hsl(var(--accent)))
+    no-repeat left bottom;
+  background-size: 0% 1.5px;
+  transition: background-size 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ink-bleed[data-done="true"] {
+  background-size: 100% 1.5px;
+  text-decoration: line-through;
+  text-decoration-color: hsl(var(--accent));
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  color: hsl(var(--muted-foreground));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 80ms !important;
+    animation-duration: 80ms !important;
+  }
+  .ink-bleed,
+  .ink-bleed[data-done="true"] {
+    transition-duration: 0ms !important;
+  }
+}
+
+/* ============================================================
+   마크다운 문서 뷰어 스타일 — Hanji+Ink에 맞춰 재작성
+   ============================================================ */
 .prose {
   color: hsl(var(--foreground));
   line-height: 1.75;
   font-size: 0.9375rem;
+  font-family:
+    "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
+    sans-serif;
 }
 
 .prose h1,
 .prose h2,
 .prose h3,
 .prose h4 {
+  font-family: "Paperlogy", "Noto Serif KR", serif;
   font-weight: 700;
   color: hsl(var(--foreground));
   margin-top: 1.75em;
   margin-bottom: 0.5em;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
-.prose h1 { font-size: 1.5rem; }
-.prose h2 { font-size: 1.25rem; border-bottom: 1px solid hsl(var(--border)); padding-bottom: 0.3em; }
-.prose h3 { font-size: 1.1rem; }
+.prose h1 { font-size: 1.75rem; font-weight: 900; letter-spacing: -0.02em; }
+.prose h2 {
+  font-size: 1.375rem;
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.3em;
+}
+.prose h3 { font-size: 1.125rem; }
 .prose h4 { font-size: 1rem; }
 
 .prose p {
@@ -85,32 +351,41 @@ body {
   margin-bottom: 0;
 }
 
+/* Links — 단청 red underline, no color change until hover */
 .prose a {
-  color: hsl(var(--primary));
+  color: hsl(var(--foreground));
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-color: hsl(var(--accent));
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  transition: color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .prose a:hover {
-  opacity: 0.8;
+  color: hsl(var(--accent));
 }
 
+/* Inline code — surface-2 background, no rounded, mono */
 .prose code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: "IBM Plex Mono", "JetBrains Mono", monospace;
   font-size: 0.875em;
-  background-color: hsl(var(--muted));
+  background-color: hsl(var(--surface-2));
   color: hsl(var(--foreground));
   padding: 0.15em 0.4em;
-  border-radius: 0.25rem;
+  border-radius: 2px;
 }
 
+/* Code blocks — hairline border, no shadow, no heavy radius */
 .prose pre {
-  background-color: hsl(var(--muted));
+  background-color: hsl(var(--surface-2));
   border: 1px solid hsl(var(--border));
-  border-radius: 0.5rem;
+  border-left: 2px solid hsl(var(--accent));
+  border-radius: 2px;
   padding: 1em 1.25em;
   overflow-x: auto;
   margin-bottom: 1em;
+  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
 }
 
 .prose pre code {
@@ -120,30 +395,40 @@ body {
   color: hsl(var(--foreground));
 }
 
+/* Blockquote — left accent rule, ink-soft text, NOT italic (Korean italics read wrong) */
 .prose blockquote {
-  border-left: 3px solid hsl(var(--primary));
+  border-left: 2px solid hsl(var(--accent));
   margin: 1em 0;
-  padding: 0.5em 1em;
-  color: hsl(var(--muted-foreground));
-  font-style: italic;
+  padding: 0.25em 0 0.25em 1em;
+  color: hsl(var(--ink-soft));
+  font-style: normal;
 }
 
+/* Tables — hairlines, tabular nums, Plex for data */
 .prose table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1em;
+  font-family:
+    "IBM Plex Sans KR", "Pretendard Variable", sans-serif;
   font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
   display: block;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
 .prose th {
-  background-color: hsl(var(--muted));
+  background-color: hsl(var(--surface-2));
   font-weight: 600;
   text-align: left;
   padding: 0.5em 0.75em;
   border: 1px solid hsl(var(--border));
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
 }
 
 .prose td {
@@ -152,7 +437,7 @@ body {
 }
 
 .prose tr:nth-child(even) td {
-  background-color: hsl(var(--muted) / 0.4);
+  background-color: hsl(var(--surface-2) / 0.5);
 }
 
 .prose hr {
@@ -163,24 +448,18 @@ body {
 
 .prose img {
   max-width: 100%;
-  border-radius: 0.5rem;
+  border-radius: 2px;
+  border: 1px solid hsl(var(--border));
 }
 
-/* GFM 취소선 */
 .prose del {
   text-decoration: line-through;
+  text-decoration-color: hsl(var(--accent));
+  text-decoration-thickness: 1.5px;
   color: hsl(var(--muted-foreground));
 }
 
-/* 모바일 prose 조정 */
-@media (max-width: 640px) {
-  .prose h1 { font-size: 1.25rem; }
-  .prose h2 { font-size: 1.125rem; }
-  .prose h3 { font-size: 1rem; }
-  .prose { font-size: 0.9rem; }
-}
-
-/* GFM 체크리스트 */
+/* Checklists */
 .prose ul:has(input[type="checkbox"]) {
   list-style: none;
   padding-left: 0.25em;
@@ -188,6 +467,14 @@ body {
 
 .prose input[type="checkbox"] {
   margin-right: 0.5em;
-  accent-color: hsl(var(--primary));
+  accent-color: hsl(var(--accent));
   vertical-align: middle;
+}
+
+/* Mobile prose */
+@media (max-width: 640px) {
+  .prose h1 { font-size: 1.375rem; }
+  .prose h2 { font-size: 1.1875rem; }
+  .prose h3 { font-size: 1rem; }
+  .prose { font-size: 0.9rem; }
 }
