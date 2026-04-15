@@ -54,7 +54,7 @@ export function DocsTracker({
       <div className="mb-4">
         <h1 className="text-xl font-bold">문서</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          dev-docs/ 하위 문서 {docs.length}개 · frontmatter 기반
+          docs/ 하위 문서 {docs.length}개 · frontmatter 기반
         </p>
       </div>
 
@@ -136,7 +136,7 @@ export function DocsTracker({
       {docs.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">dev-docs/ 디렉토리에서 문서를 찾을 수 없습니다.</p>
+          <p className="text-sm">docs/ 디렉토리에서 문서를 찾을 수 없습니다.</p>
           <p className="text-xs mt-1">
             frontmatter(status, title)가 있는 마크다운 파일이 자동으로 표시됩니다.
           </p>

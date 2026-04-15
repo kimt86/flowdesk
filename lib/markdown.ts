@@ -21,7 +21,7 @@ const sanitizeSchema: Schema = {
 
 /**
  * 마크다운 내 상대경로 .md 링크를 /docs/view?path=... 형태로 리라이팅하는 rehype 플러그인.
- * currentRelPath: 현재 문서의 workspaceRoot 기준 상대경로 (예: "dev-docs\logic\doc.md")
+ * currentRelPath: 현재 문서의 workspaceRoot 기준 상대경로 (예: "docs\logic\doc.md")
  */
 function rehypeRewriteDocLinks(currentRelPath: string) {
   return () => (tree: Root) => {
@@ -38,7 +38,7 @@ function rehypeRewriteDocLinks(currentRelPath: string) {
       if (!href.endsWith(".md")) return;
 
       // 현재 문서의 디렉토리를 기준으로 상대경로 해석
-      // currentRelPath: "dev-docs\logic\design\doc.md" (Windows 경로)
+      // currentRelPath: "docs\logic\design\doc.md" (Windows 경로)
       const currentDir = path.dirname(currentRelPath.replace(/\\/g, "/"));
       const resolved = path.posix.normalize(
         path.posix.join(currentDir, href)

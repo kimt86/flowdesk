@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { syncTodosFromFile, startFileWatcher } from "@/lib/sync";
 import { addTodo } from "@/lib/parsers/todo-parser";
 import type { TodoPriority } from "@/lib/types";
@@ -19,18 +20,19 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { content, priority = "medium", category = "@개발", dueDate } = body;
+    const { content, priority = "medium", category = "@개발", dueDate, tags, memo } = body;
 
     if (!content?.trim()) {
       return NextResponse.json({ error: "content is required" }, { status: 400 });
     }
 
-    const success = addTodo(content.trim(), priority as TodoPriority, category, dueDate);
+    const success = addTodo(content.trim(), priority as TodoPriority, category, dueDate, tags, memo);
     if (!success) {
       return NextResponse.json({ error: "Failed to add todo" }, { status: 500 });
     }
 
     const todos = await syncTodosFromFile();
+    revalidatePath("/", "layout");
     return NextResponse.json({ todos }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/todos]", err);

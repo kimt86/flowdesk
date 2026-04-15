@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { syncTodosFromFile } from "@/lib/sync";
 import { updateTodoStatus, updateTodo, deleteTodo, readTodos } from "@/lib/parsers/todo-parser";
 import type { TodoStatus, TodoPriority } from "@/lib/types";
@@ -21,10 +22,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid todo id" }, { status: 400 });
     }
 
-    const { status, content, priority, category, dueDate } = body;
+    const { status, content, priority, category, dueDate, tags, memo } = body;
 
     // status만 있으면 기존 단순 상태 업데이트
-    const hasOtherFields = content !== undefined || priority !== undefined || category !== undefined || dueDate !== undefined;
+    const hasOtherFields = content !== undefined || priority !== undefined || category !== undefined || dueDate !== undefined || tags !== undefined || memo !== undefined;
 
     let success: boolean;
     if (status && !hasOtherFields) {
@@ -36,6 +37,8 @@ export async function PATCH(
       if (priority !== undefined) fields.priority = priority as TodoPriority;
       if (category !== undefined) fields.category = category as string;
       if (dueDate !== undefined) fields.dueDate = dueDate as string | null;
+      if (tags !== undefined) fields.tags = tags as string[];
+      if (memo !== undefined) fields.memo = memo as string | null;
       success = updateTodo(lineIndex, fields);
     }
 
@@ -44,6 +47,7 @@ export async function PATCH(
     }
 
     const todos = await syncTodosFromFile();
+    revalidatePath("/", "layout");
     return NextResponse.json({ todos });
   } catch (err) {
     console.error("[PATCH /api/todos/:id]", err);
@@ -69,6 +73,7 @@ export async function DELETE(
     }
 
     const todos = await syncTodosFromFile();
+    revalidatePath("/", "layout");
     return NextResponse.json({ todos });
   } catch (err) {
     console.error("[DELETE /api/todos/:id]", err);

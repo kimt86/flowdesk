@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Calendar } from "lucide-react";
 import { scanMeetings } from "@/lib/meetings";
 import { MeetingList } from "@/components/meeting-list";

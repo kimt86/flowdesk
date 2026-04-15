@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { Todo, TodoStatus } from "@/lib/types";
-import { Plus, RefreshCw, ArrowRight, ChevronDown, FileText, Pencil, Trash2 } from "lucide-react";
+import { Plus, RefreshCw, ArrowRight, ChevronDown, FileText, Pencil, Trash2, Search, Tag, CalendarPlus, CalendarMinus, Archive } from "lucide-react";
 
 const COLUMNS: { id: TodoStatus; label: string; headerClass: string; dotColor: string }[] = [
   { id: "todo",        label: "할 일",  headerClass: "border-gray-300",  dotColor: "bg-gray-400"  },
@@ -37,17 +38,21 @@ const NEXT_STATUS_LABEL: Record<string, string> = {
   "in-progress": "시작", "done": "완료",
 };
 
-type EditFields = { content: string; priority: Todo["priority"]; category: string; dueDate: string };
+type EditFields = { content: string; priority: Todo["priority"]; category: string; dueDate: string; tags: string; memo: string };
 
 export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
+  const router = useRouter();
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<EditFields>({
-    content: "", priority: "medium", category: "@개발", dueDate: "",
+    content: "", priority: "medium", category: "@개발", dueDate: "", tags: "", memo: "",
   });
   const [refreshing, setRefreshing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   async function handleStatusChange(todo: Todo, newStatus: TodoStatus) {
     setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, status: newStatus } : t)));
@@ -59,6 +64,7 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
     if (res.ok) {
       const data = await res.json();
       setTodos(data.todos);
+      router.refresh();
     } else {
       setTodos(initialTodos);
     }
@@ -73,21 +79,82 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
         priority: fields.priority,
         category: fields.category,
         dueDate: fields.dueDate || null,
+        tags: fields.tags ? fields.tags.split(/\s+/).filter(Boolean) : [],
+        memo: fields.memo || null,
       }),
     });
     if (res.ok) {
       const data = await res.json();
       setTodos(data.todos);
       setEditingId(null);
+      router.refresh();
+    }
+  }
+
+  async function handleSendToToday(todo: Todo) {
+    if (todo.tags.includes("today")) return;
+    const newTags = [...todo.tags, "today"];
+    setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, tags: newTags } : t)));
+    const res = await fetch(`/api/todos/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags: newTags }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setTodos(data.todos);
+      router.refresh();
+    } else {
+      setTodos(initialTodos);
+    }
+  }
+
+  async function handleRemoveFromToday(todo: Todo) {
+    if (!todo.tags.includes("today")) return;
+    const newTags = todo.tags.filter((t) => t !== "today");
+    setTodos((prev) => prev.map((t) => (t.id === todo.id ? { ...t, tags: newTags } : t)));
+    const res = await fetch(`/api/todos/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags: newTags }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setTodos(data.todos);
+      router.refresh();
+    } else {
+      setTodos(initialTodos);
+    }
+  }
+
+  async function handleArchive(todo: Todo) {
+    setConfirmArchiveId(null);
+    setTodos((prev) => prev.filter((t) => t.id !== todo.id));
+    const res = await fetch("/api/archive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lineIndex: todo.lineIndex }),
+    });
+    if (res.ok) {
+      // 보관 후 todos 재동기화
+      const todosRes = await fetch("/api/todos");
+      if (todosRes.ok) {
+        const data = await todosRes.json();
+        setTodos(data.todos);
+      }
+      router.refresh();
     }
   }
 
   async function handleDelete(todo: Todo) {
+    // 즉시 제거 (optimistic)
+    setConfirmDeleteId(null);
+    setTodos((prev) => prev.filter((t) => t.id !== todo.id));
     const res = await fetch(`/api/todos/${todo.id}`, { method: "DELETE" });
     if (res.ok) {
       const data = await res.json();
       setTodos(data.todos);
-      setConfirmDeleteId(null);
+      router.refresh();
     }
   }
 
@@ -112,18 +179,46 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
         priority: addForm.priority,
         category: addForm.category,
         dueDate: addForm.dueDate || undefined,
+        tags: addForm.tags ? addForm.tags.split(/\s+/).filter(Boolean) : undefined,
+        memo: addForm.memo || undefined,
       }),
     });
     if (res.ok) {
       const data = await res.json();
       setTodos(data.todos);
-      setAddForm({ content: "", priority: "medium", category: "@개발", dueDate: "" });
+      setAddForm({ content: "", priority: "medium", category: "@개발", dueDate: "", tags: "", memo: "" });
       setShowAddForm(false);
+      router.refresh();
     }
   }
 
-  const activeTodos = todos.filter((t) => t.status !== "done").length;
-  const doneTodos   = todos.filter((t) => t.status === "done").length;
+  const tagCounts: Record<string, number> = {};
+  for (const t of todos) {
+    for (const tag of t.tags) {
+      tagCounts[tag] = (tagCounts[tag] ?? 0) + 1;
+    }
+  }
+  const allTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([tag]) => tag);
+
+  const filteredTodos = todos.filter((t) => {
+    if (selectedTags.length > 0 && !t.tags.some((tag) => selectedTags.includes(tag))) return false;
+    if (query) {
+      const q = query.toLowerCase();
+      if (!t.content.toLowerCase().includes(q) && !t.tags.some((tag) => tag.toLowerCase().includes(q)) && !t.category.toLowerCase().includes(q) && !(t.memo ?? "").toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  function toggleTag(tag: string) {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
+
+  const activeTodos = filteredTodos.filter((t) => t.status !== "done").length;
+  const doneTodos   = filteredTodos.filter((t) => t.status === "done").length;
 
   return (
     <div className="p-4 md:p-6 h-full flex flex-col">
@@ -154,6 +249,60 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
         </div>
       </div>
 
+      {/* 검색 */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="할 일 검색 (제목, 태그, 메모)..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+        />
+      </div>
+
+      {/* 태그 필터 */}
+      {allTags.length > 0 && (
+        <div className="mb-4 flex items-start gap-2">
+          <Tag className="w-3.5 h-3.5 text-muted-foreground mt-1 flex-shrink-0" />
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setSelectedTags([])}
+              className={cn(
+                "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                selectedTags.length === 0
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/40"
+              )}
+            >
+              전체
+            </button>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={cn(
+                  "text-xs px-2.5 py-1 rounded-full border transition-colors",
+                  selectedTags.includes(tag)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/40"
+                )}
+              >
+                {tag}
+                <span className="ml-1 opacity-60">{tagCounts[tag]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 필터 결과 */}
+      {(selectedTags.length > 0 || query) && (
+        <p className="text-xs text-muted-foreground mb-3">
+          {filteredTodos.length}개 표시 중 (전체 {todos.length}개)
+        </p>
+      )}
+
       {/* 추가 폼 */}
       {showAddForm && (
         <form onSubmit={handleAddTodo} className="bg-card border border-border rounded-lg p-4 mb-5 shadow-sm">
@@ -174,16 +323,36 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
               onChange={(e) => setAddForm({ ...addForm, dueDate: e.target.value })}
               className="text-sm px-3 py-1.5 border border-border rounded-md bg-background w-full sm:w-auto"
             />
-            <div className="flex gap-2 sm:ml-auto">
-              <button type="button" onClick={() => setShowAddForm(false)}
-                className="flex-1 sm:flex-none text-sm px-4 py-1.5 border border-border rounded-md hover:bg-muted transition-colors">
-                취소
-              </button>
-              <button type="submit"
-                className="flex-1 sm:flex-none text-sm px-4 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium">
-                추가
-              </button>
-            </div>
+          </div>
+          <div className="mt-2">
+            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">태그</label>
+            <input
+              type="text"
+              placeholder="공백으로 구분 (예: 배차 설계)"
+              value={addForm.tags}
+              onChange={(e) => setAddForm({ ...addForm, tags: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+          <div className="mt-2">
+            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">메모</label>
+            <textarea
+              placeholder="선택사항"
+              rows={2}
+              value={addForm.memo}
+              onChange={(e) => setAddForm({ ...addForm, memo: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+            />
+          </div>
+          <div className="flex gap-2 justify-end mt-3">
+            <button type="button" onClick={() => setShowAddForm(false)}
+              className="text-sm px-4 py-1.5 border border-border rounded-md hover:bg-muted transition-colors">
+              취소
+            </button>
+            <button type="submit"
+              className="text-sm px-4 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium">
+              추가
+            </button>
           </div>
         </form>
       )}
@@ -191,7 +360,7 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
       {/* 칸반 보드 */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 min-h-0">
         {COLUMNS.map((col) => {
-          const colTodos = todos.filter((t) => t.status === col.id);
+          const colTodos = filteredTodos.filter((t) => t.status === col.id);
           return (
             <div key={col.id} className="flex flex-col gap-2 min-h-0">
               <div className={cn("flex items-center gap-2 px-3 py-2 rounded-md border-l-4 bg-muted/50", col.headerClass)}>
@@ -212,6 +381,7 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
                     todo={todo}
                     isEditing={editingId === todo.id}
                     isConfirmingDelete={confirmDeleteId === todo.id}
+                    isConfirmingArchive={confirmArchiveId === todo.id}
                     onStatusChange={handleStatusChange}
                     onEditStart={() => setEditingId(todo.id)}
                     onEditCancel={() => setEditingId(null)}
@@ -219,6 +389,11 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
                     onDeleteStart={() => setConfirmDeleteId(todo.id)}
                     onDeleteCancel={() => setConfirmDeleteId(null)}
                     onDeleteConfirm={() => handleDelete(todo)}
+                    onSendToToday={() => handleSendToToday(todo)}
+                    onRemoveFromToday={() => handleRemoveFromToday(todo)}
+                    onArchiveStart={() => setConfirmArchiveId(todo.id)}
+                    onArchiveCancel={() => setConfirmArchiveId(null)}
+                    onArchiveConfirm={() => handleArchive(todo)}
                   />
                 ))}
               </div>
@@ -256,6 +431,7 @@ function TodoCard({
   todo,
   isEditing,
   isConfirmingDelete,
+  isConfirmingArchive,
   onStatusChange,
   onEditStart,
   onEditCancel,
@@ -263,10 +439,16 @@ function TodoCard({
   onDeleteStart,
   onDeleteCancel,
   onDeleteConfirm,
+  onSendToToday,
+  onRemoveFromToday,
+  onArchiveStart,
+  onArchiveCancel,
+  onArchiveConfirm,
 }: {
   todo: Todo;
   isEditing: boolean;
   isConfirmingDelete: boolean;
+  isConfirmingArchive: boolean;
   onStatusChange: (todo: Todo, status: TodoStatus) => void;
   onEditStart: () => void;
   onEditCancel: () => void;
@@ -274,13 +456,21 @@ function TodoCard({
   onDeleteStart: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
+  onSendToToday: () => void;
+  onRemoveFromToday: () => void;
+  onArchiveStart: () => void;
+  onArchiveCancel: () => void;
+  onArchiveConfirm: () => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const isOnToday = todo.tags.includes("today");
   const [editForm, setEditForm] = useState<EditFields>({
     content: todo.content,
     priority: todo.priority,
     category: todo.category,
     dueDate: todo.dueDate ?? "",
+    tags: todo.tags.join(" "),
+    memo: todo.memo ?? "",
   });
 
   useEffect(() => {
@@ -289,8 +479,10 @@ function TodoCard({
       priority: todo.priority,
       category: todo.category,
       dueDate: todo.dueDate ?? "",
+      tags: todo.tags.join(" "),
+      memo: todo.memo ?? "",
     });
-  }, [todo.id, todo.content, todo.priority, todo.category, todo.dueDate]);
+  }, [todo.id, todo.content, todo.priority, todo.category, todo.dueDate, todo.tags, todo.memo]);
 
   const nextStatus = NEXT_STATUS[todo.status];
 
@@ -316,6 +508,26 @@ function TodoCard({
             onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
             className="text-sm px-2 py-1.5 border border-border rounded-md bg-background w-full"
           />
+          <div>
+            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">태그</label>
+            <input
+              type="text"
+              placeholder="공백으로 구분 (예: 배차 설계)"
+              value={editForm.tags}
+              onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+              className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] text-muted-foreground font-medium mb-0.5 block">메모</label>
+            <textarea
+              placeholder="선택사항"
+              rows={2}
+              value={editForm.memo}
+              onChange={(e) => setEditForm({ ...editForm, memo: e.target.value })}
+              className="w-full px-2 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+            />
+          </div>
         </div>
         <div className="flex gap-1.5 justify-end">
           <button onClick={onEditCancel}
@@ -351,6 +563,26 @@ function TodoCard({
     );
   }
 
+  // 보관 확인 모드
+  if (isConfirmingArchive) {
+    return (
+      <div className={cn("bg-card border border-purple-300 rounded-lg p-3 shadow-sm border-l-4", PRIORITY_LEFT_BORDER[todo.priority])}>
+        <p className="text-sm font-medium leading-snug mb-1 truncate">{todo.content}</p>
+        <p className="text-xs text-muted-foreground mb-3">보관함으로 이동할까요? 보관함에서 언제든 복원할 수 있습니다.</p>
+        <div className="flex gap-1.5 justify-end">
+          <button onClick={onArchiveCancel}
+            className="text-xs px-3 py-1 border border-border rounded-md hover:bg-muted transition-colors">
+            취소
+          </button>
+          <button onClick={onArchiveConfirm}
+            className="text-xs px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors font-medium">
+            보관
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 일반 카드 모드
   return (
     <div className={cn(
@@ -361,6 +593,24 @@ function TodoCard({
       <div className="flex items-start gap-1.5 mb-2.5">
         <p className="text-sm font-medium leading-snug flex-1">{todo.content}</p>
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {todo.status !== "done" && !isOnToday && (
+            <button onClick={onSendToToday} title="오늘 할 일로 보내기"
+              className="p-2 rounded hover:bg-blue-50 text-muted-foreground hover:text-blue-600 transition-colors">
+              <CalendarPlus className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {todo.status !== "done" && isOnToday && (
+            <button onClick={onRemoveFromToday} title="오늘에서 제외하기"
+              className="p-2 rounded hover:bg-amber-50 text-amber-600 transition-colors">
+              <CalendarMinus className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {todo.status === "done" && (
+            <button onClick={onArchiveStart} title="보관함으로 이동"
+              className="p-2 rounded hover:bg-purple-50 text-muted-foreground hover:text-purple-600 transition-colors">
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button onClick={onEditStart} title="편집"
             className="p-2 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
             <Pencil className="w-3.5 h-3.5" />
@@ -383,7 +633,23 @@ function TodoCard({
         {todo.dueDate && (
           <span className="text-xs text-muted-foreground ml-auto">마감 {todo.dueDate}</span>
         )}
+        {todo.tags.length > 0 && (
+          <>
+            {todo.tags.map((tag) => (
+              <span key={tag} className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                #{tag}
+              </span>
+            ))}
+          </>
+        )}
       </div>
+
+      {/* 메모 */}
+      {todo.memo && (
+        <div className="text-xs text-muted-foreground bg-muted/50 rounded px-2.5 py-1.5 mb-2.5 border-l-2 border-muted-foreground/30">
+          {todo.memo}
+        </div>
+      )}
 
       {/* 관련 문서 참조 */}
       {todo.docRefs.length > 0 && (

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { DOCS_ROOT, scanDocs } from "@/lib/docs";
 import { WORKSPACE_ROOT } from "@/lib/paths";
 import { DocsTracker } from "@/components/docs/docs-tracker";

@@ -4,37 +4,37 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import matter from "gray-matter";
 import { ArrowLeft, Clock, User, FileText, Tag, Pencil, Presentation } from "lucide-react";
-import { readDocSafe, STATUS_LABELS, STATUS_COLORS } from "@/lib/docs";
+import { readWorkSafe } from "@/lib/work";
 import { renderMarkdown } from "@/lib/markdown";
-import { DocDeleteButton } from "@/components/docs/doc-delete-button";
+import { WorkDeleteButton } from "@/components/work/work-delete-button";
 
 interface PageProps {
   searchParams: { path?: string | string[] };
 }
 
-export default async function DocViewPage({ searchParams }: PageProps) {
+export default async function WorkViewPage({ searchParams }: PageProps) {
   const rawPath = searchParams.path;
   const relPath = Array.isArray(rawPath) ? rawPath[0] : rawPath;
 
   if (!relPath) {
-    redirect("/docs");
+    redirect("/work");
   }
 
-  const raw = readDocSafe(relPath);
+  const raw = readWorkSafe(relPath);
 
   if (!raw) {
     return (
       <div className="p-4 md:p-6 max-w-3xl">
         <Link
-          href="/docs"
+          href="/work"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          문서
+          작업
         </Link>
         <div className="text-center py-16 text-muted-foreground">
           <FileText className="w-8 h-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">문서를 찾을 수 없습니다.</p>
+          <p className="text-sm">파일을 찾을 수 없습니다.</p>
           <p className="text-xs mt-1 font-mono text-muted-foreground/60">{relPath}</p>
         </div>
       </div>
@@ -45,8 +45,8 @@ export default async function DocViewPage({ searchParams }: PageProps) {
   const toStr = (v: unknown) =>
     v instanceof Date ? v.toISOString().split("T")[0] : String(v ?? "");
 
-  const title = typeof data.title === "string" ? data.title : relPath.split("/").pop()?.replace(".md", "") ?? "";
-  const status = typeof data.status === "string" ? data.status : "draft";
+  const fileName = relPath.split(/[\\/]/).pop()?.replace(".md", "") ?? "";
+  const title = typeof data.title === "string" ? data.title : fileName;
   const author = typeof data.author === "string" ? data.author : "";
   const created = toStr(data.created);
   const updated = toStr(data.updated);
@@ -61,46 +61,35 @@ export default async function DocViewPage({ searchParams }: PageProps) {
 
   return (
     <div className="p-4 md:p-6 max-w-3xl">
-      {/* 뒤로가기 + 액션 버튼 */}
       <div className="flex items-center justify-between mb-6">
         <Link
-          href="/docs"
+          href="/work"
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          문서
+          작업
         </Link>
         <div className="flex items-center gap-2">
           <Link
-            href={`/docs/present?path=${encodeURIComponent(relPath)}`}
+            href={`/work/present?path=${encodeURIComponent(relPath)}`}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Presentation className="w-3.5 h-3.5" />
             발표
           </Link>
           <Link
-            href={`/docs/edit?path=${encodeURIComponent(relPath)}`}
+            href={`/work/edit?path=${encodeURIComponent(relPath)}`}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
             편집
           </Link>
-          <DocDeleteButton relPath={relPath} />
+          <WorkDeleteButton relPath={relPath} />
         </div>
       </div>
 
-      {/* 메타데이터 헤더 */}
       <div className="mb-6 pb-4 border-b border-border">
-        <div className="flex items-start gap-3 mb-3">
-          <h1 className="text-xl font-bold flex-1 leading-snug">{title}</h1>
-          <span
-            className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${
-              STATUS_COLORS[status] ?? "bg-muted text-muted-foreground"
-            }`}
-          >
-            {STATUS_LABELS[status] ?? status}
-          </span>
-        </div>
+        <h1 className="text-xl font-bold leading-snug mb-3">{title}</h1>
         <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
           {author && (
             <span className="flex items-center gap-1">
@@ -137,7 +126,6 @@ export default async function DocViewPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      {/* 마크다운 본문 */}
       <div
         className="prose"
         dangerouslySetInnerHTML={{ __html: html }}

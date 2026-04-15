@@ -51,7 +51,7 @@ export function PromptBuilderClient({ stats }: Props) {
   const TABS: { id: PromptType; label: string; icon: React.ReactNode; desc: string }[] = [
     { id: "weekly", label: "주간 보고서", icon: <CalendarRange className="w-4 h-4" />, desc: "이번 주 완료/진행/예정 항목을 수집해 주간 보고서 프롬프트를 만듭니다." },
     { id: "meeting", label: "회의록 구조화", icon: <MessageSquare className="w-4 h-4" />, desc: "자유 메모를 5분류 회의록 형식으로 변환하는 프롬프트를 만듭니다." },
-    { id: "doc", label: "문서 초안", icon: <FileText className="w-4 h-4" />, desc: "dev-docs 형식에 맞는 기술 문서 초안 작성 프롬프트를 만듭니다." },
+    { id: "doc", label: "문서 초안", icon: <FileText className="w-4 h-4" />, desc: "docs 형식에 맞는 기술 문서 초안 작성 프롬프트를 만듭니다." },
     { id: "capture", label: "메모 분류", icon: <Inbox className="w-4 h-4" />, desc: "여러 메모를 Todo/회의록/문서로 분류하는 프롬프트를 만듭니다." },
   ];
 

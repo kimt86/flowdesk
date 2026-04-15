@@ -36,10 +36,17 @@ function parseDoneDate(content: string): string | null {
   return null;
 }
 
+function parseTags(raw: string): string[] {
+  const matches = raw.match(/#[\w가-힣]+/g);
+  if (!matches) return [];
+  return matches.map((t) => t.slice(1)); // strip '#' prefix
+}
+
 function cleanContent(raw: string): string {
   return raw
     .replace(/🔴|🟡|🟢/g, "")
     .replace(/@[\w가-힣]+/, "")
+    .replace(/#[\w가-힣]+/g, "")
     .replace(/\|.*$/, "")
     .replace(/—\s*$/, "")
     .trim();
@@ -55,13 +62,13 @@ function parseDocRefs(raw: string): DocRef[] {
   const segments = raw.split("|").map((s) => s.trim());
 
   for (const seg of segments) {
-    // 형식 1: → `dev-docs/...` 또는 → dev-docs/...
+    // 형식 1: → `docs/...` 또는 → docs/...
     const arrowMatch = seg.match(/^→\s*`?([^`]+?)`?\s*$/);
     if (arrowMatch) {
       refs.push({ path: arrowMatch[1].trim() });
       continue;
     }
-    // 형식 2: ISS-XX @ dev-docs/...
+    // 형식 2: ISS-XX @ docs/...
     const issuePathMatch = seg.match(/^(ISS-\d+)\s*@\s*(.+?)\s*$/);
     if (issuePathMatch) {
       refs.push({ issueId: issuePathMatch[1], path: issuePathMatch[2].trim() });
@@ -76,9 +83,12 @@ export function parseTodos(markdown: string): Todo[] {
   const todos: Todo[] = [];
   let idCounter = 0;
   let inCodeBlock = false;
+  const skipLines = new Set<number>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    if (skipLines.has(i)) continue;
 
     // 코드블록(```) 진입/탈출 추적 — 내부 예시 라인은 파싱 대상에서 제외
     if (line.trimStart().startsWith("```")) {
@@ -98,6 +108,29 @@ export function parseTodos(markdown: string): Todo[] {
     const doneDate = parseDoneDate(rawContent);
     const content = cleanContent(rawContent);
     const docRefs = parseDocRefs(rawContent);
+    const tags = parseTags(rawContent);
+
+    // Peek at next line for memo (and extract doc refs from memo line)
+    let memo: string | null = null;
+    if (i + 1 < lines.length) {
+      const nextLine = lines[i + 1];
+      const memoMatch = nextLine.match(/^\s{2}>\s?(.*)$/);
+      if (memoMatch) {
+        const memoRaw = memoMatch[1].trim();
+        // Extract doc refs from memo line and merge with todo's docRefs
+        const memoDocRefs = parseDocRefs(memoRaw);
+        docRefs.push(...memoDocRefs);
+        // Clean doc ref patterns from memo text
+        const memoClean = memoRaw
+          .split("|")
+          .map((s) => s.trim())
+          .filter((s) => !s.match(/^→\s*`?[^`]+`?\s*$/) && !s.match(/^(ISS-\d+)\s*@\s*.+$/))
+          .join(" | ")
+          .trim();
+        memo = memoClean || null;
+        skipLines.add(i + 1);
+      }
+    }
 
     todos.push({
       id: `todo-${i}-${idCounter++}`,
@@ -108,6 +141,8 @@ export function parseTodos(markdown: string): Todo[] {
       dueDate,
       doneDate,
       docRefs,
+      tags,
+      memo,
       rawLine: line,
       lineIndex: i,
     });
@@ -153,7 +188,7 @@ export function updateTodoStatus(
   }
 }
 
-/** Todo 객체를 마크다운 한 줄로 재조립 */
+/** Todo 객체를 마크다운 라인(들)으로 재조립. 메모/docRef가 있으면 두 번째 줄 포함 */
 function buildTodoLine(todo: Todo): string {
   const statusChar = { todo: " ", "in-progress": "~", blocked: "!", done: "x" }[todo.status];
   const priorityEmoji = { high: "🔴", medium: "🟡", low: "🟢" }[todo.priority];
@@ -161,15 +196,24 @@ function buildTodoLine(todo: Todo): string {
   let line = `- [${statusChar}] ${priorityEmoji} ${todo.content} — ${cat}`;
   if (todo.dueDate) line += ` | 마감: ${todo.dueDate}`;
   if (todo.doneDate) line += ` | 완료: ${todo.doneDate}`;
+  if (todo.tags && todo.tags.length > 0) {
+    line += ` | ${todo.tags.map((t) => `#${t}`).join(" ")}`;
+  }
+  // docRefs와 memo는 메모 줄(  > ...)에 함께 기록
+  const memoParts: string[] = [];
+  if (todo.memo) memoParts.push(todo.memo);
   for (const ref of todo.docRefs ?? []) {
-    line += ref.issueId ? ` | ${ref.issueId} @ ${ref.path}` : ` | → ${ref.path}`;
+    memoParts.push(ref.issueId ? `${ref.issueId} @ ${ref.path}` : `→ \`${ref.path}\``);
+  }
+  if (memoParts.length > 0) {
+    line += `\n  > ${memoParts.join(" | ")}`;
   }
   return line;
 }
 
 export function updateTodo(
   lineIndex: number,
-  fields: Partial<Pick<Todo, "content" | "priority" | "category" | "dueDate" | "status">>
+  fields: Partial<Pick<Todo, "content" | "priority" | "category" | "dueDate" | "status" | "tags" | "memo">>
 ): boolean {
   try {
     const markdown = fs.readFileSync(TODO_FILE_PATH, "utf-8");
@@ -191,7 +235,23 @@ export function updateTodo(
       merged.doneDate = null;
     }
 
-    lines[lineIndex] = buildTodoLine(merged);
+    // Check if existing todo had a memo line following it
+    const hadMemoLine =
+      lineIndex + 1 < lines.length &&
+      /^\s{2}>\s?(.*)$/.test(lines[lineIndex + 1]);
+
+    // Build new content (may include memo as second line via \n)
+    const built = buildTodoLine(merged);
+    const builtLines = built.split("\n");
+
+    if (hadMemoLine) {
+      // Replace the todo line + old memo line
+      lines.splice(lineIndex, 2, ...builtLines);
+    } else {
+      // Replace only the todo line, insert memo line if needed
+      lines.splice(lineIndex, 1, ...builtLines);
+    }
+
     fs.writeFileSync(TODO_FILE_PATH, lines.join("\n"), "utf-8");
     return true;
   } catch {
@@ -204,7 +264,13 @@ export function deleteTodo(lineIndex: number): boolean {
     const markdown = fs.readFileSync(TODO_FILE_PATH, "utf-8");
     const lines = markdown.split("\n");
     if (lineIndex < 0 || lineIndex >= lines.length) return false;
-    lines.splice(lineIndex, 1);
+
+    // Check if the next line is a memo line — delete it too
+    const hasMemoLine =
+      lineIndex + 1 < lines.length &&
+      /^\s{2}>\s?(.*)$/.test(lines[lineIndex + 1]);
+
+    lines.splice(lineIndex, hasMemoLine ? 2 : 1);
     fs.writeFileSync(TODO_FILE_PATH, lines.join("\n"), "utf-8");
     return true;
   } catch {
@@ -216,7 +282,9 @@ export function addTodo(
   content: string,
   priority: TodoPriority,
   category: string,
-  dueDate?: string
+  dueDate?: string,
+  tags?: string[],
+  memo?: string
 ): boolean {
   try {
     const fileContent = fs.readFileSync(TODO_FILE_PATH, "utf-8");
@@ -225,31 +293,18 @@ export function addTodo(
     const priorityEmoji = { high: "🔴", medium: "🟡", low: "🟢" }[priority];
     const cat = category.startsWith("@") ? category : `@${category}`;
     const duePart = dueDate ? ` | 마감: ${dueDate}` : "";
-    const newLine = `- [ ] ${priorityEmoji} ${content} — ${cat}${duePart}`;
+    const tagsPart = tags && tags.length > 0 ? ` | ${tags.map((t) => `#${t}`).join(" ")}` : "";
+    const newLine = `- [ ] ${priorityEmoji} ${content} — ${cat}${duePart}${tagsPart}`;
+    const newLines = memo ? [newLine, `  > ${memo}`] : [newLine];
 
-    // 우선순위에 해당하는 섹션 아래에 삽입
-    const prioritySectionMap = { high: "🔴 긴급", medium: "🟡 보통", low: "🟢 낮음" };
-    const sectionHeader = `### ${prioritySectionMap[priority]}`;
-    const sectionIdx = lines.findIndex((l) => l.includes(sectionHeader));
-
-    if (sectionIdx !== -1) {
-      // 섹션 찾은 경우 — 섹션 다음 줄에 삽입 (빈 줄 건너뜀)
-      let insertAt = sectionIdx + 1;
+    // "## 할 일" 섹션 상단에 삽입 (없으면 파일 끝에 추가)
+    const todoSectionIdx = lines.findIndex((l) => l.trim() === "## 할 일");
+    if (todoSectionIdx !== -1) {
+      let insertAt = todoSectionIdx + 1;
       while (insertAt < lines.length && lines[insertAt].trim() === "") insertAt++;
-
-      // "_긴급 항목이 없습니다._" 같은 빈 메시지 제거
-      if (lines[insertAt]?.startsWith("_") && lines[insertAt]?.endsWith("_")) {
-        lines.splice(insertAt, 1);
-      }
-      lines.splice(insertAt, 0, newLine);
+      lines.splice(insertAt, 0, ...newLines);
     } else {
-      // 섹션 없으면 ## 할 일 섹션 바로 아래에
-      const todoSectionIdx = lines.findIndex((l) => l.trim() === "## 할 일");
-      if (todoSectionIdx !== -1) {
-        lines.splice(todoSectionIdx + 2, 0, newLine);
-      } else {
-        lines.push(newLine);
-      }
+      lines.push(...newLines);
     }
 
     // 마지막 업데이트 날짜 갱신

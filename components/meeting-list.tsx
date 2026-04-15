@@ -72,13 +72,6 @@ export function MeetingList({ meetings }: { meetings: MeetingMeta[] }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium">{meeting.title}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            meeting.status === "finalized"
-                              ? "bg-green-50 text-green-700"
-                              : "bg-yellow-50 text-yellow-700"
-                          }`}>
-                            {meeting.status === "finalized" ? "완료" : "초안"}
-                          </span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">{meeting.date}</p>
                         <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">

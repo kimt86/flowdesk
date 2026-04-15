@@ -47,7 +47,7 @@ export function scanDocs(dir: string, base: string): DocMeta[] {
 /** relPath를 DOCS_ROOT 내부 절대 경로로 안전하게 resolve. 외부 경로면 null 반환. */
 function resolveDocPath(relPath: string): string | null {
   if (!relPath) return null;
-  // relPath는 workspaceRoot 기준 상대 경로 (예: "dev-docs\file.md")
+  // relPath는 workspaceRoot 기준 상대 경로 (예: "docs\file.md")
   const resolved = path.resolve(WORKSPACE_ROOT, relPath);
   if (!resolved.startsWith(DOCS_ROOT + path.sep) && resolved !== DOCS_ROOT) return null;
   if (!resolved.endsWith(".md")) return null;
@@ -57,7 +57,7 @@ function resolveDocPath(relPath: string): string | null {
 /**
  * relPath를 기반으로 파일을 안전하게 읽습니다.
  * DOCS_ROOT 외부 경로(path traversal) 접근을 차단합니다.
- * dev-docs는 팀 내부 신뢰 파일이지만 URL 파라미터 검증은 필요합니다.
+ * docs는 팀 내부 신뢰 파일이지만 URL 파라미터 검증은 필요합니다.
  */
 export function readDocSafe(relPath: string): string | null {
   const resolved = resolveDocPath(relPath);
