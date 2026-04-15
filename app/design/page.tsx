@@ -13,6 +13,7 @@ import {
   Alert,
   KbdSequence,
   Textarea,
+  Seal,
 } from "@/components/ui";
 
 export const metadata: Metadata = {
@@ -207,8 +208,48 @@ export default function DesignShowcasePage() {
         </div>
       </Section>
 
+      {/* Seal stamp */}
+      <Section title="Seal" kicker="08 · Ritual of completion">
+        <div className="space-y-md max-w-[680px]">
+          <p className="text-sm text-ink-soft leading-relaxed">
+            완료·아카이브·주간보고 마감처럼 <em className="not-italic text-foreground">의례에 가까운 순간</em>에만
+            찍히는 표식. 단청 레드, 약간 기울어진 각도로. 아무데나 쓰지 않는다.
+          </p>
+          <div className="border border-border bg-surface px-lg py-md flex items-center gap-xl flex-wrap">
+            <div className="flex flex-col items-center gap-2">
+              <Seal size="sm" />
+              <span className="mono-meta">SM · 14px</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Seal size="md" />
+              <span className="mono-meta">MD · 24px</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Seal size="lg" />
+              <span className="mono-meta">LG · 40px</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Seal size="md" glyph="完" />
+              <span className="mono-meta">완 · 완료</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Seal size="md" glyph="存" />
+              <span className="mono-meta">존 · 보관</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Seal size="md" glyph="週" />
+              <span className="mono-meta">주 · 주간보고</span>
+            </div>
+          </div>
+          <p className="mono-meta !normal-case !tracking-snug text-xs text-muted-foreground">
+            사용 예시: 아카이브 리스트 우상단 · 주간보고 제출 직후 · 연말 완결 화면.
+            매일 보이는 자리에는 쓰지 않는다 — 의미가 닳는다.
+          </p>
+        </div>
+      </Section>
+
       {/* Color swatches */}
-      <Section title="Color" kicker="08 · 한지와 먹">
+      <Section title="Color" kicker="09 · 한지와 먹">
         <div className="grid md:grid-cols-2 gap-lg">
           <SwatchGrid
             title="한지 / Hanji (Light)"

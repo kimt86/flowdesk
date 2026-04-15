@@ -18,3 +18,4 @@ export {
 export { Tag, tagVariants, type TagProps } from "./tag";
 export { Alert, alertVariants, type AlertProps } from "./alert";
 export { Kbd, KbdSequence, type KbdSequenceProps } from "./kbd";
+export { Seal, type SealProps } from "./seal";

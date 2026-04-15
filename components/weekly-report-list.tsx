@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarRange, User, Tag, FileText } from "lucide-react";
+import { User } from "lucide-react";
 import type { WorklogMeta } from "@/lib/worklogs";
+import { Seal } from "@/components/ui";
 
 export function WeeklyReportList({ reports }: { reports: WorklogMeta[] }) {
   if (reports.length === 0) {
     return (
-      <div className="text-center py-16 text-muted-foreground">
-        <CalendarRange className="w-8 h-8 mx-auto mb-2 opacity-40" />
-        <p className="text-sm">작성된 주간 보고서가 없습니다.</p>
-        <p className="text-xs mt-1 text-muted-foreground/60">
-          work-logs/ 디렉토리에 week-*.md 파일을 추가하면 자동으로 표시됩니다.
+      <div className="border border-border bg-surface p-xl rounded-sm text-center">
+        <p className="font-display text-lg mb-xs">
+          작성된 주간 보고서가 없습니다
+        </p>
+        <p className="mono-meta !normal-case !tracking-snug text-xs text-muted-foreground leading-relaxed">
+          work-logs/ 디렉토리에{" "}
+          <span className="mono-meta">week-*.md</span> 파일을 추가하면 자동으로
+          표시됩니다.
         </p>
       </div>
     );
@@ -26,49 +30,74 @@ export function WeeklyReportList({ reports }: { reports: WorklogMeta[] }) {
   const years = Array.from(byYear.keys()).sort((a, b) => b - a);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-xl">
       {years.map((year) => (
         <section key={year}>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3 px-1">
-            {year}년 <span className="font-normal">· {byYear.get(year)!.length}건</span>
+          <h2 className="flex items-baseline justify-between pb-2 border-b border-border mb-sm">
+            <span className="font-display text-xl tracking-tight text-foreground">
+              {year}
+              <span className="text-muted-foreground font-normal text-md ml-2">
+                년
+              </span>
+            </span>
+            <span className="mono-meta tabular-nums">
+              {byYear.get(year)!.length} 건
+            </span>
           </h2>
-          <div className="space-y-2">
+          <div className="space-y-xs">
             {byYear.get(year)!.map((report) => (
               <Link
                 key={report.relPath}
                 href={`/weekly/view?path=${encodeURIComponent(report.relPath)}`}
-                className="block bg-card border border-border rounded-lg p-4 hover:border-primary/40 hover:shadow-sm transition-all"
+                className="group relative block border border-border bg-surface rounded-sm p-md transition-colors duration-short ease-out-flow hover:border-border-strong"
               >
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <span className="text-xs font-bold text-primary">W{report.weekNumber}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{report.dateRange || `${report.year}년 ${report.month}월 ${report.weekNumber}주차`}</span>
+                {/* 시그니처 Seal — 제출된 보고서의 완결 표식 */}
+                <span className="absolute top-3 right-3">
+                  <Seal size="md" glyph="週" />
+                </span>
+
+                <div className="flex items-start gap-md pr-lg">
+                  {/* 주차 넘버 — display font */}
+                  <div className="shrink-0 w-12 text-center">
+                    <div className="font-display text-2xl leading-none tabular-nums text-foreground">
+                      {report.weekNumber}
                     </div>
+                    <div className="mono-meta mt-1">WK</div>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground leading-snug mb-1">
+                      {report.dateRange ||
+                        `${report.year}년 ${report.month}월 ${report.weekNumber}주차`}
+                    </p>
                     {report.summary && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                      <p className="text-sm text-ink-soft line-clamp-2 mb-xs leading-relaxed">
                         {report.summary}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+                    <div className="mono-meta flex flex-wrap items-center gap-md">
                       {report.author && (
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1">
+                          <User className="w-3 h-3" strokeWidth={1.5} />
                           {report.author}
                         </span>
                       )}
                       {report.tags.length > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Tag className="w-3 h-3" />
-                          {report.tags.slice(0, 4).join(", ")}
-                          {report.tags.length > 4 && ` +${report.tags.length - 4}`}
+                        <span className="inline-flex flex-wrap items-center gap-1.5 !normal-case !tracking-snug text-xs">
+                          {report.tags.slice(0, 4).map((t) => (
+                            <span key={t} className="text-accent">
+                              #{t}
+                            </span>
+                          ))}
+                          {report.tags.length > 4 && (
+                            <span className="text-muted-foreground tabular-nums">
+                              +{report.tags.length - 4}
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
                   </div>
-                  <FileText className="w-4 h-4 text-muted-foreground/40 shrink-0 mt-0.5" />
                 </div>
               </Link>
             ))}
