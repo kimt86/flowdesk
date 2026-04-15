@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Monitor } from "lucide-react";
 
+/*
+ * MarkdownPresenter — "한지와 먹" 발표 모드
+ * 풀블리드 hanji 배경, Paperlogy 96px 타이틀, 단청 레드 4px 시그니처 룰.
+ */
 interface Props {
   html: string;
   title: string;
@@ -11,7 +15,6 @@ interface Props {
 
 export function MarkdownPresenter({ html, title, backHref }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fullscreenEnabled, setFullscreenEnabled] = useState(true);
   const [showButton, setShowButton] = useState(false);
 
   const handleClose = async () => {
@@ -19,10 +22,9 @@ export function MarkdownPresenter({ html, title, backHref }: Props) {
       try {
         await document.exitFullscreen();
       } catch {
-        // Fullscreen exit 실패해도 계속 진행
+        // 실패해도 계속 진행
       }
     }
-    // 발표 모드와 뷰어는 서로 다른 루트 레이아웃을 쓰므로 풀 페이지 리로드 필요
     window.location.href = backHref;
   };
 
@@ -30,18 +32,14 @@ export function MarkdownPresenter({ html, title, backHref }: Props) {
     const container = containerRef.current;
     if (!container) return;
 
-    // 자동 fullscreen 시도
     const requestFull = async () => {
       try {
         await document.documentElement.requestFullscreen();
-        setFullscreenEnabled(true);
       } catch {
-        // fullscreen 불가 (보안 정책, 사용자 제스처 필요 등)
         setShowButton(true);
       }
     };
 
-    // 약간의 delay 후 시도 (DOM 렌더링 이후)
     const timer = setTimeout(requestFull, 100);
     return () => clearTimeout(timer);
   }, []);
@@ -60,51 +58,69 @@ export function MarkdownPresenter({ html, title, backHref }: Props) {
       ref={containerRef}
       className="min-h-screen bg-background text-foreground overflow-auto flex flex-col"
     >
-      {/* 헤더: 닫기 + 제목 + 수동 fullscreen 버튼 */}
-      <div className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm px-6 py-4 flex items-center justify-between shrink-0">
-        <button
-          onClick={handleClose}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          닫기
-        </button>
-        <h1 className="text-sm font-semibold text-center flex-1 mx-4 truncate">
-          {title}
-        </h1>
-        {showButton && (
+      {/* 상단 유틸리티 바 — 얇고 조용하게 */}
+      <div className="sticky top-0 z-10 bg-background/85 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-lg py-2">
           <button
-            onClick={handleManualFullscreen}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            type="button"
+            onClick={handleClose}
+            aria-label="닫기"
+            className="inline-flex items-center gap-1.5 mono-meta !normal-case !tracking-snug text-xs text-muted-foreground hover:text-foreground transition-colors duration-short ease-out-flow"
           >
-            <Monitor className="w-3.5 h-3.5" />
-            전체화면
+            <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
+            닫기
           </button>
-        )}
-        {!showButton && <div className="w-20" />}
+          <h1 className="mono-meta !normal-case !tracking-snug text-xs text-ink-soft flex-1 text-center mx-lg truncate">
+            {title}
+          </h1>
+          {showButton ? (
+            <button
+              type="button"
+              onClick={handleManualFullscreen}
+              aria-label="전체화면"
+              className="inline-flex items-center gap-1.5 mono-meta !normal-case !tracking-snug text-xs text-muted-foreground hover:text-foreground transition-colors duration-short ease-out-flow"
+            >
+              <Monitor className="w-3.5 h-3.5" strokeWidth={1.5} />
+              전체화면
+            </button>
+          ) : (
+            <span className="w-16" aria-hidden />
+          )}
+        </div>
+        {/* 시그니처: 단청 레드 4px 룰 — 발표 내내 존재 */}
+        <div className="h-[4px] bg-accent" aria-hidden />
       </div>
 
-      {/* 본문: prose + 큰 폰트 */}
-      <div className="flex-1 flex justify-center py-8 px-6">
+      {/* 본문 — prose 위에 발표 스케일 덮기 */}
+      <div className="flex-1 flex justify-center py-2xl px-lg">
         <div
-          className="prose prose-invert max-w-5xl w-full
-            [&_h1]:text-5xl [&_h1]:font-bold [&_h1]:mb-6 [&_h1]:mt-8
-            [&_h2]:text-4xl [&_h2]:font-bold [&_h2]:mb-5 [&_h2]:mt-6
-            [&_h3]:text-3xl [&_h3]:font-semibold [&_h3]:mb-4 [&_h3]:mt-5
-            [&_h4]:text-2xl [&_h4]:font-semibold [&_h4]:mb-3 [&_h4]:mt-4
-            [&_h5]:text-xl [&_h5]:font-semibold [&_h5]:mb-3 [&_h5]:mt-3
-            [&_h6]:text-lg [&_h6]:font-semibold [&_h6]:mb-2 [&_h6]:mt-3
-            [&_p]:text-2xl [&_p]:leading-relaxed [&_p]:mb-6
-            [&_li]:text-2xl [&_li]:leading-relaxed [&_li]:mb-2
-            [&_ul]:mb-6 [&_ol]:mb-6
-            [&_code]:text-xl [&_code]:px-2 [&_code]:py-1 [&_code]:rounded [&_code]:bg-muted
-            [&_pre]:text-lg [&_pre]:overflow-auto [&_pre]:mb-6
-            [&_blockquote]:text-xl [&_blockquote]:italic [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:my-6
-            [&_table]:text-lg [&_table]:mb-6
-            [&_a]:text-primary [&_a]:underline hover:[&_a]:no-underline
-            dark:prose-invert"
+          className="prose w-full max-w-5xl
+            [&_h1]:font-display [&_h1]:text-[64px] md:[&_h1]:text-[96px] [&_h1]:font-black [&_h1]:leading-[0.92] [&_h1]:tracking-display [&_h1]:mb-lg [&_h1]:mt-xl [&_h1]:border-0
+            [&_h2]:font-display [&_h2]:text-5xl [&_h2]:font-bold [&_h2]:leading-tight [&_h2]:tracking-tight [&_h2]:mb-md [&_h2]:mt-xl [&_h2]:border-0 [&_h2]:pb-0
+            [&_h3]:font-display [&_h3]:text-4xl [&_h3]:font-bold [&_h3]:leading-tight [&_h3]:tracking-tight [&_h3]:mb-md [&_h3]:mt-lg
+            [&_h4]:font-display [&_h4]:text-3xl [&_h4]:font-bold [&_h4]:mb-sm [&_h4]:mt-md
+            [&_p]:text-2xl [&_p]:leading-[1.55] [&_p]:mb-lg
+            [&_li]:text-2xl [&_li]:leading-[1.55] [&_li]:mb-2
+            [&_ul]:mb-lg [&_ol]:mb-lg
+            [&_code]:text-xl [&_code]:px-2 [&_code]:py-1
+            [&_pre]:text-lg [&_pre]:mb-lg [&_pre]:border-l-[3px] [&_pre]:border-l-accent
+            [&_blockquote]:text-2xl [&_blockquote]:border-l-[3px] [&_blockquote]:border-l-accent [&_blockquote]:pl-lg [&_blockquote]:my-lg [&_blockquote]:not-italic
+            [&_hr]:my-2xl [&_hr]:border-border-strong
+            [&_table]:text-lg [&_table]:mb-lg
+            [&_a]:text-foreground [&_a]:underline [&_a]:decoration-accent [&_a]:underline-offset-4 [&_a]:decoration-[2px]"
           dangerouslySetInnerHTML={{ __html: html }}
         />
+      </div>
+
+      {/* 하단 footer — 얇은 signature */}
+      <div className="px-lg py-sm border-t border-border mono-meta flex justify-between items-center shrink-0">
+        <span className="inline-flex items-center gap-2">
+          <span className="seal" aria-hidden />
+          FlowDesk · Presenter
+        </span>
+        <span className="!normal-case !tracking-snug text-xs text-muted-foreground truncate max-w-[50%]">
+          {title}
+        </span>
       </div>
     </div>
   );
