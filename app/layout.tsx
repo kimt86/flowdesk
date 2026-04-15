@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { FileChangeListener } from "@/components/file-change-listener";
+import { CommandPalette } from "@/components/command-palette";
 
 export const metadata: Metadata = {
   title: "FlowDesk — CLT Digital Team",
@@ -50,6 +51,7 @@ export default function RootLayout({
           <Sidebar />
           <main className="flex-1 overflow-auto">{children}</main>
           <FileChangeListener />
+          <CommandPalette />
         </div>
       </body>
     </html>
