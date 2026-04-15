@@ -227,24 +227,11 @@ export function TodayBoard({
   if (!todayData || !isToday || todayData.tasks.length === 0) {
     return (
       <div className="h-full flex flex-col p-lg md:p-2xl">
+        <UtilityBar onRefresh={handleRefresh} refreshing={refreshing} />
         <Masthead
           dateLabel={todayData?.date ?? todayDate}
           dayLabel={todayData?.dayLabel}
           weekInfo={todayData?.weekInfo}
-          rightSlot={
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw
-                className={cn("w-3.5 h-3.5", refreshing && "animate-spin")}
-                strokeWidth={1.5}
-              />
-              새로고침
-            </Button>
-          }
         />
         <div className="flex-1 flex items-center justify-center">
           <div className="max-w-[460px] text-center border border-border bg-surface p-xl rounded-sm">
@@ -270,37 +257,23 @@ export function TodayBoard({
 
   return (
     <div className="h-full flex flex-col p-lg md:p-2xl">
+      <UtilityBar onRefresh={handleRefresh} refreshing={refreshing} />
       {/* Masthead */}
       <Masthead
         dateLabel={todayData.date}
         dayLabel={todayData.dayLabel}
         weekInfo={todayData.weekInfo}
         rightSlot={
-          <div className="flex items-end gap-md">
-            <div className="text-right">
-              <div className="font-display text-2xl leading-none tabular-nums">
-                {progressPercent}%
-              </div>
-              <div className="mono-meta mt-1">
-                {doneTasks} / {totalTasks} done
-              </div>
+          <div className="text-right">
+            <div className="font-display text-2xl leading-none tabular-nums">
+              {progressPercent}%
             </div>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw
-                className={cn("w-3.5 h-3.5", refreshing && "animate-spin")}
-                strokeWidth={1.5}
-              />
-              새로고침
-            </Button>
+            <div className="mono-meta mt-1">
+              {doneTasks} / {totalTasks} done
+            </div>
           </div>
         }
       />
-
       {/* Progress + counts */}
       <div className="mt-md mb-lg">
         <div className="flex items-center gap-lg text-sm mb-xs">
@@ -338,6 +311,35 @@ export function TodayBoard({
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// UtilityBar — masthead 위 얇은 유틸리티 라인 (새로고침 등)
+// ============================================================
+function UtilityBar({
+  onRefresh,
+  refreshing,
+}: {
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  return (
+    <div className="flex justify-end mb-xs">
+      <button
+        type="button"
+        onClick={onRefresh}
+        disabled={refreshing}
+        aria-label="새로고침"
+        title="새로고침"
+        className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors duration-short ease-out-flow rounded-sm disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        <RefreshCw
+          className={cn("w-3.5 h-3.5", refreshing && "animate-spin")}
+          strokeWidth={1.5}
+        />
+      </button>
     </div>
   );
 }
