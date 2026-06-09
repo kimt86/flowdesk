@@ -23,6 +23,12 @@ const net = require("node:net");
 const isDev = !app.isPackaged;
 const HOST = "127.0.0.1";
 
+// 네이티브 창 컨트롤(titleBarOverlay) 색 — 테마에 맞춰 갱신(globals.css --background/foreground).
+const TITLEBAR = {
+  light: { color: "#F5F1E8", symbolColor: "#141210", height: 48 },
+  dark: { color: "#141210", symbolColor: "#F5F1E8", height: 48 },
+};
+
 // 단일 인스턴스 강제 — 두 인스턴스가 같은 워크스페이스/포트를 다투지 않게.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -254,7 +260,7 @@ function createMainWindow() {
     icon: appIconPath(),
     // DESIGN.md: OS 타이틀바 그림자 제거. 네이티브 창 컨트롤은 overlay로 유지.
     titleBarStyle: "hidden",
-    titleBarOverlay: { color: "#F5F1E8", symbolColor: "#141210", height: 48 },
+    titleBarOverlay: TITLEBAR.light,
     webPreferences: hardenedWebPreferences(),
   });
   attachSecurity(mainWindow);
@@ -329,6 +335,17 @@ function showNotification(title, body) {
   });
   n.on("click", showMainWindow);
   n.show();
+}
+
+// ---------- 테마별 네이티브 창 컨트롤 색 갱신 (먹지/한지 전환 대응) ----------
+function applyTitleBarTheme(isDark) {
+  if (process.platform !== "win32") return; // overlay는 Windows/Linux 전용
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    mainWindow.setTitleBarOverlay(isDark ? TITLEBAR.dark : TITLEBAR.light);
+  } catch {
+    /* 무시 */
+  }
 }
 
 // ---------- 앱 메뉴 ----------
@@ -406,6 +423,9 @@ ipcMain.handle("flowdesk:notify", (_e, payload) => {
   const { title, body } = payload || {};
   showNotification(title, body);
 });
+ipcMain.handle("flowdesk:set-titlebar-theme", (_e, isDark) =>
+  applyTitleBarTheme(!!isDark),
+);
 
 // ---------- 절전/잠금 복귀 → 렌더러에 SSE 재연결 신호 ----------
 function wirePowerMonitor() {

@@ -39,6 +39,7 @@ declare global {
     flowdesk?: {
       onReconnectSse?: (cb: () => void) => () => void;
       notify?: (payload: { title?: string; body?: string }) => void;
+      setTitleBarTheme?: (isDark: boolean) => void;
     };
   }
 }
