@@ -6,22 +6,41 @@ import { ArrowLeft, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EditorToolbar, type ViewMode } from "@/components/docs/editor-toolbar";
 import { EditorPreview } from "@/components/docs/editor-preview";
+import {
+  DocMetadataEditor,
+  type DocMetadataInitial,
+} from "@/components/docs/doc-metadata-editor";
 import { useMarkdownEditor } from "@/lib/hooks/use-markdown-editor";
 
 interface Props {
   relPath: string;
-  initialContent: string;
+  /** 분리 모드: 본문(body)만 받고 메타 에디터를 렌더 + 저장 시 { body } 전송 */
+  initialBody?: string;
+  initialMeta?: DocMetadataInitial;
+  /** 레거시 모드: frontmatter 포함 raw 전체. 메타 에디터 없음, { content } 전송 */
+  initialContent?: string;
   /** 저장 API URL (기본: /api/docs) */
   saveApiBase?: string;
   /** 뷰어 경로 (기본: /docs/view) */
   viewBase?: string;
 }
 
-export function DocEditor({ relPath, initialContent, saveApiBase = "/api/docs", viewBase = "/docs/view" }: Props) {
+export function DocEditor({
+  relPath,
+  initialBody,
+  initialMeta,
+  initialContent,
+  saveApiBase = "/api/docs",
+  viewBase = "/docs/view",
+}: Props) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [content, setContent] = useState(initialContent);
+  // 분리 모드 vs 레거시 모드 판별
+  const splitMode = initialBody !== undefined && initialMeta !== undefined;
+  const baseline = splitMode ? (initialBody ?? "") : (initialContent ?? "");
+
+  const [content, setContent] = useState(baseline);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== "undefined" && window.innerWidth < 768) return "edit";
     return "split";
@@ -29,7 +48,7 @@ export function DocEditor({ relPath, initialContent, saveApiBase = "/api/docs", 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isDirty = content !== initialContent;
+  const isDirty = content !== baseline;
   const viewHref = `${viewBase}?path=${encodeURIComponent(relPath)}`;
 
   const editor = useMarkdownEditor(textareaRef, setContent);
@@ -50,10 +69,11 @@ export function DocEditor({ relPath, initialContent, saveApiBase = "/api/docs", 
     setSaving(true);
     setError(null);
     try {
+      const payload = splitMode ? { body: content } : { content };
       const res = await fetch(`${saveApiBase}?path=${encodeURIComponent(relPath)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         router.push(viewHref);
@@ -65,7 +85,7 @@ export function DocEditor({ relPath, initialContent, saveApiBase = "/api/docs", 
     } finally {
       setSaving(false);
     }
-  }, [content, relPath, router, viewHref, saveApiBase]);
+  }, [content, relPath, router, viewHref, saveApiBase, splitMode]);
 
   // 키보드 단축키
   useEffect(() => {
@@ -164,7 +184,14 @@ export function DocEditor({ relPath, initialContent, saveApiBase = "/api/docs", 
         </div>
       </div>
 
-      <p className="text-xs font-mono text-muted-foreground/60 mb-2 shrink-0">{relPath}</p>
+      {/* 메타데이터 인라인 편집 — splitMode에서만 (docs 전용) */}
+      {splitMode && initialMeta ? (
+        <DocMetadataEditor relPath={relPath} initial={initialMeta} />
+      ) : (
+        <p className="text-xs font-mono text-muted-foreground/60 mb-2 shrink-0">
+          {relPath}
+        </p>
+      )}
 
       {/* 툴바 */}
       <EditorToolbar

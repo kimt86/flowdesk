@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { PRESENTATIONS_DIR } from "./paths";
+import { getOrSet } from "./server-cache";
 
 export interface PresentationMeta {
   filePath: string;
@@ -35,6 +36,10 @@ function countSlides(html: string): number {
 function extractDate(fileName: string): string {
   const match = fileName.match(/^(\d{4}-\d{2}-\d{2})/);
   return match ? match[1] : "";
+}
+
+export function getCachedPresentations(): PresentationMeta[] {
+  return getOrSet("scanPresentations:default", () => scanPresentations());
 }
 
 export function scanPresentations(): PresentationMeta[] {

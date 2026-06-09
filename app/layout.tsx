@@ -1,8 +1,67 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
+import {
+  IBM_Plex_Mono,
+  IBM_Plex_Sans_KR,
+  JetBrains_Mono,
+  Noto_Serif_KR,
+} from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { FileChangeListener } from "@/components/file-change-listener";
 import { CommandPalette } from "@/components/command-palette";
+
+// 로컬 TTF — sans 본문 + display 타이틀.
+// next/font/local이 자동 preload + woff2 변환 + FOUT 방지.
+const aaSans = localFont({
+  src: "./fonts/aa_hapjeong_sans_normal.ttf",
+  variable: "--font-aa-sans",
+  display: "swap",
+});
+const aaDisplay = localFont({
+  src: "./fonts/aa_silent_handwirte.ttf",
+  variable: "--font-aa-display",
+  display: "swap",
+});
+
+// Google 폰트 — next/font/google이 빌드 타임에 다운로드해 .next/static에 self-host한다.
+// 런타임 CDN 호출 0 → 오프라인 데스크톱에서도 동작. 이들은 Latin/숫자 위주 역할이며
+// 한글은 self-host된 Pretendard(전체 한글) / Paperlogy(디스플레이)로 폴백된다(globals.css).
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-ibm-plex-mono",
+  display: "swap",
+});
+const ibmPlexSansKr = IBM_Plex_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-ibm-plex-sans-kr",
+  display: "swap",
+  preload: false,
+});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
+});
+const notoSerifKr = Noto_Serif_KR({
+  subsets: ["latin"],
+  weight: ["700", "900"],
+  variable: "--font-noto-serif-kr",
+  display: "swap",
+  preload: false,
+});
+
+const fontVariables = [
+  aaSans.variable,
+  aaDisplay.variable,
+  ibmPlexMono.variable,
+  ibmPlexSansKr.variable,
+  jetbrainsMono.variable,
+  notoSerifKr.variable,
+].join(" ");
 
 export const metadata: Metadata = {
   title: "FlowDesk — CLT Digital Team",
@@ -25,25 +84,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning className={fontVariables}>
       <head>
-        {/* Pretendard Variable — Korean-first body face */}
-        <link
-          rel="stylesheet"
-          as="style"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
-        />
-        {/* IBM Plex Sans KR (data) + IBM Plex Mono (metadata) + JetBrains Mono (code) + Noto Serif KR (Paperlogy fallback) */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin=""
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+KR:wght@700;900&display=swap"
-          rel="stylesheet"
-        />
+        {/* 폰트는 전부 self-host(next/font + public/fonts @font-face) — 런타임 CDN 없음(오프라인 보장). */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="antialiased">

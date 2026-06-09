@@ -57,6 +57,7 @@ module.exports = {
 
       fontFamily: {
         sans: [
+          "var(--font-aa-sans)",
           "Pretendard Variable",
           "Pretendard",
           "-apple-system",
@@ -66,7 +67,12 @@ module.exports = {
           "system-ui",
           "sans-serif",
         ],
-        display: ["Paperlogy", "Noto Serif KR", "serif"],
+        display: [
+          "var(--font-aa-display)",
+          "Paperlogy",
+          "Noto Serif KR",
+          "serif",
+        ],
         data: [
           "IBM Plex Sans KR",
           "Pretendard Variable",

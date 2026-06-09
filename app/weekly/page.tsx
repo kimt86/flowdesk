@@ -1,9 +1,9 @@
 import { CalendarRange } from "lucide-react";
-import { scanWorklogs } from "@/lib/worklogs";
+import { getCachedWorklogs } from "@/lib/worklogs";
 import { WeeklyReportList } from "@/components/weekly-report-list";
 
 export default function WeeklyPage() {
-  const reports = scanWorklogs();
+  const reports = getCachedWorklogs();
 
   return (
     <div className="p-4 md:p-6 max-w-3xl">

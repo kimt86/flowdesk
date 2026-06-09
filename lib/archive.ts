@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { ArchivedTodo, Todo } from "@/lib/types";
+import { ArchivedTodo, MonthSummary, Todo } from "@/lib/types";
 import { ARCHIVE_DIR, ARCHIVE_FILE_PATH, TODAY_FILE_PATH } from "@/lib/paths";
 import { parseTodos } from "@/lib/parsers/todo-parser";
 
@@ -54,6 +54,81 @@ export function listArchivedTodos(): ArchivedTodo[] {
   }
 
   // 완료일 내림차순 (없으면 뒤로)
+  all.sort((a, b) => {
+    if (!a.doneDate && !b.doneDate) return 0;
+    if (!a.doneDate) return 1;
+    if (!b.doneDate) return -1;
+    return b.doneDate.localeCompare(a.doneDate);
+  });
+
+  return all;
+}
+
+/** 파일 상대경로에서 "YYYY-MM" 키를 추출. 경로가 YYYY/MM/... 형태가 아니면 null */
+function extractMonthKey(relPath: string): string | null {
+  const parts = relPath.split("/");
+  if (parts.length >= 2 && /^\d{4}$/.test(parts[0]) && /^\d{2}$/.test(parts[1])) {
+    return `${parts[0]}-${parts[1]}`;
+  }
+  return null;
+}
+
+function monthKeyToLabel(key: string): string {
+  const [year, month] = key.split("-");
+  return `${year}년 ${parseInt(month, 10)}월`;
+}
+
+/** 월별 요약 (태스크 라인만 카운트, full parse 안 함) */
+export function listArchiveMonthSummaries(): MonthSummary[] {
+  const files = walkMarkdown(ARCHIVE_DIR);
+  const counts: Record<string, number> = {};
+
+  for (const absPath of files) {
+    const rel = toRelative(absPath);
+    const key = extractMonthKey(rel) ?? "undated";
+    try {
+      const content = fs.readFileSync(absPath, "utf-8");
+      const taskLines = content.split("\n").filter((l) => /^- \[[x~! ]\] /.test(l));
+      counts[key] = (counts[key] ?? 0) + taskLines.length;
+    } catch {
+      // 읽기 실패 무시
+    }
+  }
+
+  return Object.entries(counts)
+    .map(([key, count]) => ({
+      key,
+      label: key === "undated" ? "날짜 미지정" : monthKeyToLabel(key),
+      count,
+    }))
+    .sort((a, b) => b.key.localeCompare(a.key)); // 최신순
+}
+
+/** 특정 월의 보관 항목만 반환 */
+export function listArchivedTodosByMonth(year: string, month: string): ArchivedTodo[] {
+  const monthDir = path.join(ARCHIVE_DIR, year, month);
+  let files: string[];
+  try {
+    files = walkMarkdown(monthDir);
+  } catch {
+    return [];
+  }
+  if (files.length === 0) return [];
+
+  const all: ArchivedTodo[] = [];
+  for (const absPath of files) {
+    try {
+      const markdown = fs.readFileSync(absPath, "utf-8");
+      const todos = parseTodos(markdown);
+      const rel = toRelative(absPath);
+      for (const t of todos) {
+        all.push({ ...t, id: `arch-${rel}-${t.lineIndex}`, archiveFile: rel });
+      }
+    } catch {
+      // 읽기 실패 무시
+    }
+  }
+
   all.sort((a, b) => {
     if (!a.doneDate && !b.doneDate) return 0;
     if (!a.doneDate) return 1;

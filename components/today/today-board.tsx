@@ -237,7 +237,7 @@ export function TodayBoard({
           <div className="max-w-[460px] text-center border border-border bg-surface p-xl rounded-sm">
             <p className="font-display text-lg mb-xs">오늘 할 일이 없습니다</p>
             <p className="text-sm text-ink-soft leading-relaxed">
-              "모든 할 일" 페이지에서{" "}
+              &quot;모든 할 일&quot; 페이지에서{" "}
               <span className="mono-meta !normal-case !tracking-snug">
                 오늘 할 일로 보내기
               </span>{" "}

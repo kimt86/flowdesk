@@ -3,10 +3,13 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import matter from "gray-matter";
-import { ArrowLeft, Clock, User, FileText, Tag, Pencil, Presentation } from "lucide-react";
-import { readDocSafe, STATUS_LABELS, STATUS_COLORS } from "@/lib/docs";
+import { ArrowLeft, FileText, Pencil, Presentation } from "lucide-react";
+import { readDocSafe } from "@/lib/docs";
 import { renderMarkdown } from "@/lib/markdown";
 import { DocDeleteButton } from "@/components/docs/doc-delete-button";
+import { MarkdownCopyButton } from "@/components/markdown-copy-button";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
+import { DocMetadataEditor } from "@/components/docs/doc-metadata-editor";
 
 interface PageProps {
   searchParams: { path?: string | string[] };
@@ -85,63 +88,18 @@ export default async function DocViewPage({ searchParams }: PageProps) {
             <Pencil className="w-3.5 h-3.5" />
             편집
           </Link>
+          <MarkdownCopyButton markdown={content} />
           <DocDeleteButton relPath={relPath} />
         </div>
       </div>
 
-      {/* 메타데이터 헤더 */}
-      <div className="mb-6 pb-4 border-b border-border">
-        <div className="flex items-start gap-3 mb-3">
-          <h1 className="text-xl font-bold flex-1 leading-snug">{title}</h1>
-          <span
-            className={`text-xs px-2 py-0.5 rounded font-medium shrink-0 ${
-              STATUS_COLORS[status] ?? "bg-muted text-muted-foreground"
-            }`}
-          >
-            {STATUS_LABELS[status] ?? status}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          {author && (
-            <span className="flex items-center gap-1">
-              <User className="w-3 h-3" />
-              {author}
-            </span>
-          )}
-          {updated && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              수정 {updated}
-            </span>
-          )}
-          {created && created !== updated && (
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              작성 {created}
-            </span>
-          )}
-          <span className="font-mono opacity-60">{relPath}</span>
-        </div>
-        {tags.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-            <Tag className="w-3 h-3 text-muted-foreground" />
-            {tags.map((tag) => (
-              <span
-                key={tag}
-                className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <DocMetadataEditor
+        relPath={relPath}
+        initial={{ title, status, author, tags, created, updated }}
+      />
 
       {/* 마크다운 본문 */}
-      <div
-        className="prose"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <MarkdownMermaidView html={html} />
     </div>
   );
 }

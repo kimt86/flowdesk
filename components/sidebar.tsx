@@ -18,7 +18,7 @@ import {
   Lightbulb,
   FolderKanban,
   Briefcase,
-  Archive,
+  Eye,
   Menu,
   X,
   PanelLeftClose,
@@ -29,13 +29,13 @@ const navItems = [
   { href: "/",               label: "작업 현황",   short: "현황",   icon: LayoutDashboard },
   { href: "/today",          label: "오늘 할 일",  short: "오늘",   icon: CalendarCheck   },
   { href: "/todos",          label: "모든 할 일",  short: "할 일",   icon: CheckSquare     },
-  { href: "/archive",        label: "보관함",      short: "보관",   icon: Archive         },
   { href: "/projects",       label: "프로젝트",    short: "PJT",    icon: FolderKanban    },
   { href: "/work",           label: "작업",        short: "작업",   icon: Briefcase       },
   { href: "/ideas",          label: "아이디어",    short: "IDEA",   icon: Lightbulb       },
   { href: "/meetings",       label: "회의록",      short: "회의",   icon: Calendar        },
   { href: "/presentations",  label: "발표자료",    short: "발표",   icon: Presentation    },
   { href: "/docs",           label: "문서",        short: "문서",   icon: FileText        },
+  { href: "/viewer",         label: "뷰어",        short: "뷰어",   icon: Eye             },
   { href: "/weekly",         label: "주간 보고서", short: "주간",   icon: CalendarRange   },
 ];
 
@@ -222,7 +222,7 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            "h-14 flex items-center border-b border-border",
+            "h-14 flex items-center border-b border-border app-drag",
             collapsed ? "justify-center px-2" : "justify-between px-md",
           )}
         >

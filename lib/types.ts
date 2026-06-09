@@ -66,6 +66,12 @@ export interface TodayTask {
   docRefs: DocRef[];
 }
 
+export interface MonthSummary {
+  key: string;    // "2026-04"
+  label: string;  // "2026년 4월"
+  count: number;
+}
+
 export interface TodayFile {
   date: string;        // "2026-04-09"
   dayLabel: string;    // "수요일"

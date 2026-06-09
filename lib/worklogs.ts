@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { WORKLOGS_DIR } from "./paths";
+import { getOrSet } from "./server-cache";
 
 export interface WorklogMeta {
   filePath: string;
@@ -33,6 +34,10 @@ function parseTags(raw: string): string[] {
   const matches = raw.match(/`([^`]+)`/g);
   if (!matches) return [];
   return matches.map((t) => t.replace(/`/g, "").trim());
+}
+
+export function getCachedWorklogs(): WorklogMeta[] {
+  return getOrSet("scanWorklogs:default", () => scanWorklogs());
 }
 
 export function scanWorklogs(): WorklogMeta[] {

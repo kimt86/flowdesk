@@ -8,22 +8,37 @@
  */
 
 /* ============================================================
-   Paperlogy — Korean newspaper display face (jsDelivr CDN).
-   Falls back to Noto Serif KR 900 if the CDN fails.
+   Self-hosted fonts (public/fonts) — 런타임 CDN 없이 오프라인 보장.
+   Pretendard Variable: 한글 본문 / Paperlogy: 한글 신문 디스플레이.
    ============================================================ */
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("/fonts/PretendardVariable.woff2") format("woff2");
+}
 @font-face {
   font-family: "Paperlogy";
   font-weight: 900;
   font-display: swap;
-  src: url("https://cdn.jsdelivr.net/gh/innoyouth/Paperlogy@1.0.3/fonts/webfonts/Paperlogy-9Black.woff2")
-    format("woff2");
+  src: url("/fonts/Paperlogy-9Black.woff2") format("woff2");
 }
 @font-face {
   font-family: "Paperlogy";
   font-weight: 700;
   font-display: swap;
-  src: url("https://cdn.jsdelivr.net/gh/innoyouth/Paperlogy@1.0.3/fonts/webfonts/Paperlogy-7Bold.woff2")
-    format("woff2");
+  src: url("/fonts/Paperlogy-7Bold.woff2") format("woff2");
+}
+
+/* Electron frameless 창(titleBarStyle:hidden) 드래그 영역. 브라우저에선 무시됨.
+   DESIGN.md: OS 회색 타이틀바 제거, warm-paper 일관 유지. 창 컨트롤은 titleBarOverlay. */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag,
+.app-drag :where(button, a, input, [role="button"]) {
+  -webkit-app-region: no-drag;
 }
 
 @layer base {
@@ -145,6 +160,7 @@ html[data-theme="dark"] {
 
 body {
   font-family:
+    var(--font-aa-sans),
     "Pretendard Variable",
     "Pretendard",
     -apple-system,
@@ -195,7 +211,8 @@ body::before {
    Utility classes from the design system
    ============================================================ */
 .font-display {
-  font-family: "Paperlogy", "Noto Serif KR", serif;
+  font-family: var(--font-aa-display), "Paperlogy", var(--font-noto-serif-kr),
+    "Noto Serif KR", serif;
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 0.95;
@@ -203,21 +220,23 @@ body::before {
 
 .font-data {
   font-family:
-    "IBM Plex Sans KR", "Pretendard Variable", "Pretendard", sans-serif;
+    var(--font-ibm-plex-sans-kr), "IBM Plex Sans KR", "Pretendard Variable",
+    "Pretendard", sans-serif;
   font-variant-numeric: tabular-nums;
 }
 
 .font-mono,
 .mono {
   font-family:
-    "IBM Plex Mono", "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    var(--font-ibm-plex-mono), var(--font-jetbrains-mono), "IBM Plex Mono",
+    "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
     monospace;
   font-variant-numeric: tabular-nums;
 }
 
 /* Mono metadata — uppercase, open tracking, small */
 .mono-meta {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
   font-size: 0.6875rem; /* 11px */
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -254,7 +273,7 @@ body::before {
   content: "印";
   position: absolute;
   inset: 0;
-  font-family: "Noto Serif KR", serif;
+  font-family: var(--font-noto-serif-kr), "Noto Serif KR", serif;
   font-size: 10px;
   color: hsl(var(--surface));
   display: flex;
@@ -300,15 +319,16 @@ body::before {
   line-height: 1.75;
   font-size: 0.9375rem;
   font-family:
-    "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont,
-    sans-serif;
+    var(--font-aa-sans), "Pretendard Variable", "Pretendard", -apple-system,
+    BlinkMacSystemFont, sans-serif;
 }
 
 .prose h1,
 .prose h2,
 .prose h3,
 .prose h4 {
-  font-family: "Paperlogy", "Noto Serif KR", serif;
+  font-family: var(--font-aa-display), "Paperlogy", var(--font-noto-serif-kr),
+    "Noto Serif KR", serif;
   font-weight: 700;
   color: hsl(var(--foreground));
   margin-top: 1.75em;
@@ -366,7 +386,8 @@ body::before {
 
 /* Inline code — surface-2 background, no rounded, mono */
 .prose code {
-  font-family: "IBM Plex Mono", "JetBrains Mono", monospace;
+  font-family: var(--font-ibm-plex-mono), var(--font-jetbrains-mono),
+    "IBM Plex Mono", "JetBrains Mono", monospace;
   font-size: 0.875em;
   background-color: hsl(var(--surface-2));
   color: hsl(var(--foreground));
@@ -383,7 +404,8 @@ body::before {
   padding: 1em 1.25em;
   overflow-x: auto;
   margin-bottom: 1em;
-  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+  font-family: var(--font-jetbrains-mono), var(--font-ibm-plex-mono),
+    "JetBrains Mono", "IBM Plex Mono", monospace;
   font-size: 0.875rem;
   line-height: 1.6;
 }
@@ -424,7 +446,7 @@ body::before {
   text-align: left;
   padding: 0.5em 0.75em;
   border: 1px solid hsl(var(--border));
-  font-family: "IBM Plex Mono", monospace;
+  font-family: var(--font-ibm-plex-mono), "IBM Plex Mono", monospace;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -477,4 +499,157 @@ body::before {
   .prose h2 { font-size: 1.1875rem; }
   .prose h3 { font-size: 1rem; }
   .prose { font-size: 0.9rem; }
+}
+
+/* ============================================================
+   Milkdown / Crepe WYSIWYG editor — DESIGN.md "Hanji + Ink" 변수 매핑
+   ============================================================ */
+.milkdown {
+  --crepe-color-background: hsl(var(--bg));
+  --crepe-color-on-background: hsl(var(--ink));
+  --crepe-color-surface: hsl(var(--surface));
+  --crepe-color-surface-low: hsl(var(--surface-2));
+  --crepe-color-on-surface: hsl(var(--ink));
+  --crepe-color-on-surface-variant: hsl(var(--ink-soft));
+  --crepe-color-outline: hsl(var(--border-strong));
+  --crepe-color-primary: hsl(var(--accent));
+  --crepe-color-secondary: hsl(var(--surface-2));
+  --crepe-color-on-secondary: hsl(var(--ink));
+  --crepe-color-inverse: hsl(var(--ink));
+  --crepe-color-on-inverse: hsl(var(--bg));
+  --crepe-color-inline-code: hsl(var(--accent));
+  --crepe-color-error: hsl(var(--danger));
+  --crepe-color-hover: hsl(var(--surface-2));
+  --crepe-color-selected: hsl(var(--accent) / 0.15);
+  --crepe-color-inline-area: hsl(var(--border));
+
+  --crepe-font-title:
+    var(--font-aa-display), "Paperlogy", "Noto Serif KR", "IBM Plex Sans KR",
+    serif;
+  --crepe-font-default:
+    var(--font-aa-sans), "Pretendard Variable", Pretendard, "IBM Plex Sans KR",
+    sans-serif;
+  --crepe-font-code:
+    "IBM Plex Mono", "JetBrains Mono", Menlo, Monaco, monospace;
+
+  /* DESIGN.md: 그림자 거의 없음 — modal/popover만 작은 ink shadow */
+  --crepe-shadow-1: 0 1px 0 0 hsl(var(--border));
+  --crepe-shadow-2: 0 4px 12px rgba(20, 18, 16, 0.08);
+}
+
+.milkdown .ProseMirror {
+  outline: none;
+  min-height: 60vh;
+  caret-color: hsl(var(--accent));
+  font-family: var(--crepe-font-default);
+  color: hsl(var(--ink));
+  line-height: 1.75;
+}
+
+/* Crepe 기본 toolbar/popover/menu가 둥근 radius를 쓰는데
+   DESIGN.md는 작은 radius 선호 — 살짝 줄임 */
+.milkdown [class*="milkdown-toolbar"],
+.milkdown [class*="milkdown-block-handle"],
+.milkdown [class*="milkdown-slash-menu"],
+.milkdown [class*="milkdown-link-edit"],
+.milkdown [class*="milkdown-link-preview"] {
+  border-radius: 4px !important;
+  border: 1px solid hsl(var(--border-strong));
+}
+
+/* 선택 영역 */
+.milkdown .ProseMirror::selection,
+.milkdown .ProseMirror *::selection {
+  background: hsl(var(--accent) / 0.18);
+}
+
+/* 표 셀 선택 */
+.milkdown .ProseMirror .selectedCell {
+  background: hsl(var(--accent) / 0.1);
+}
+
+/* 헤딩 — DESIGN.md 타이포 스케일 */
+.milkdown .ProseMirror h1 {
+  font-family: var(--crepe-font-title);
+  font-weight: 900;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+  margin: 1.2em 0 0.6em;
+}
+.milkdown .ProseMirror h2 {
+  font-family: var(--crepe-font-title);
+  font-weight: 700;
+  font-size: 1.375rem;
+  border-bottom: 1px solid hsl(var(--border));
+  padding-bottom: 0.3em;
+  margin: 1em 0 0.5em;
+}
+.milkdown .ProseMirror h3 {
+  font-family: var(--crepe-font-title);
+  font-weight: 700;
+  font-size: 1.125rem;
+  margin: 0.9em 0 0.4em;
+}
+.milkdown .ProseMirror h4 {
+  font-family: var(--crepe-font-title);
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0.8em 0 0.3em;
+}
+
+/* 표 — 헤어라인 */
+.milkdown .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+.milkdown .ProseMirror th,
+.milkdown .ProseMirror td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.milkdown .ProseMirror th {
+  background: hsl(var(--surface-2));
+  font-weight: 600;
+}
+
+/* 코드 — surface-2 배경 */
+.milkdown .ProseMirror code {
+  font-family: var(--crepe-font-code);
+  font-size: 0.875em;
+  background: hsl(var(--surface-2));
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+}
+.milkdown .ProseMirror pre {
+  background: hsl(var(--surface-2));
+  border: 1px solid hsl(var(--border));
+  border-left: 2px solid hsl(var(--accent));
+  padding: 0.75em 1em;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+.milkdown .ProseMirror pre code {
+  background: none;
+  padding: 0;
+  display: block;
+  white-space: pre-wrap;
+}
+
+/* Blockquote — 단청 좌측 룰 */
+.milkdown .ProseMirror blockquote {
+  border-left: 3px solid hsl(var(--accent));
+  padding-left: 1em;
+  color: hsl(var(--ink-soft));
+  font-style: normal; /* 한글 italic 금지 */
+  margin: 1em 0;
+}
+
+/* 링크 — 단청 밑줄 */
+.milkdown .ProseMirror a {
+  color: hsl(var(--ink));
+  text-decoration: underline;
+  text-decoration-color: hsl(var(--accent));
+  text-underline-offset: 3px;
 }

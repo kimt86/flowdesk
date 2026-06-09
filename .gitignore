@@ -16,6 +16,9 @@
 # production
 /build
 
+# electron-builder 산출물
+/dist-desktop
+
 # misc
 .DS_Store
 *.pem
@@ -40,6 +43,5 @@ next-env.d.ts
 .claude/
 .crew/
 
-# local dev database
-flowdesk.db
-*.db-journal
+# 커스텀 한글 폰트(비공개 — 라이선스) — 로컬 유지, 저장소 제외
+app/fonts/aa_*.ttf

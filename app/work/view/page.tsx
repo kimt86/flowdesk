@@ -7,6 +7,8 @@ import { ArrowLeft, Clock, User, FileText, Tag, Pencil, Presentation } from "luc
 import { readWorkSafe } from "@/lib/work";
 import { renderMarkdown } from "@/lib/markdown";
 import { WorkDeleteButton } from "@/components/work/work-delete-button";
+import { MarkdownCopyButton } from "@/components/markdown-copy-button";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 interface PageProps {
   searchParams: { path?: string | string[] };
@@ -84,6 +86,7 @@ export default async function WorkViewPage({ searchParams }: PageProps) {
             <Pencil className="w-3.5 h-3.5" />
             편집
           </Link>
+          <MarkdownCopyButton markdown={content} />
           <WorkDeleteButton relPath={relPath} />
         </div>
       </div>
@@ -126,10 +129,7 @@ export default async function WorkViewPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      <div
-        className="prose"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <MarkdownMermaidView html={html} />
     </div>
   );
 }

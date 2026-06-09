@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, CalendarRange, User, Tag } from "lucide-react";
 import { readWorklogSafe } from "@/lib/worklogs";
 import { renderMarkdown } from "@/lib/markdown";
+import { MarkdownCopyButton } from "@/components/markdown-copy-button";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 interface PageProps {
   searchParams: { path?: string | string[] };
@@ -65,14 +67,17 @@ export default async function WeeklyViewPage({ searchParams }: PageProps) {
 
   return (
     <div className="p-6 max-w-3xl">
-      {/* 뒤로가기 */}
-      <Link
-        href="/weekly"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        주간 보고서
-      </Link>
+      {/* 뒤로가기 + 액션 */}
+      <div className="flex items-center justify-between mb-6">
+        <Link
+          href="/weekly"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          주간 보고서
+        </Link>
+        <MarkdownCopyButton markdown={raw} />
+      </div>
 
       {/* 메타데이터 헤더 */}
       <div className="mb-6 pb-4 border-b border-border">
@@ -114,7 +119,7 @@ export default async function WeeklyViewPage({ searchParams }: PageProps) {
       </div>
 
       {/* 마크다운 본문 */}
-      <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+      <MarkdownMermaidView html={html} />
     </div>
   );
 }

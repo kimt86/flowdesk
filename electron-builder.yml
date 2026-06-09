@@ -1,0 +1,53 @@
+appId: com.cltdigital.flowdesk
+productName: FlowDesk
+copyright: © CLT Digital Team
+
+directories:
+  output: dist-desktop
+  buildResources: build-resources
+
+# asar 안에는 Electron 메인/preload만. Next standalone 서버는 extraResources로
+# asar 밖(resources/standalone)에 둬서 child_process.fork가 실제 파일 경로로 실행한다.
+files:
+  - electron/**/*
+  - "!**/*.map"
+
+# standalone 서버 payload는 asar 밖(resources/standalone)에 둔다.
+# node_modules는 electron-builder 글로벌 필터가 제외하므로 afterPack 훅에서 직접 복사.
+extraResources:
+  - from: .next/standalone
+    to: standalone
+    filter:
+      - "**/*"
+
+# 패키징 후 standalone node_modules 복사(서버 런타임 deps).
+afterPack: scripts/after-pack.js
+
+asar: true
+
+win:
+  icon: build-resources/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-Setup.${ext}
+  # 코드 서명: 인증서 확보 시 아래 주석을 풀고 환경변수/파일을 지정.
+  # signtoolOptions 또는 azureSignOptions 사용 (DESKTOP.md §6, Phase 5 참조).
+
+nsis:
+  oneClick: false
+  perMachine: false # 사용자 단위 설치 → UAC/관리자 권한 불필요, SmartScreen 마찰 감소
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  shortcutName: FlowDesk
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+# 자동 업데이트 피드: GitHub Releases (electron-updater).
+# 빌드 시 latest.yml + Setup.exe + .blockmap을 release에 업로드(npm run desktop:release).
+# 설치된 앱은 시작 시 이 release에서 새 버전을 감지·다운로드·적용한다.
+publish:
+  provider: github
+  owner: kimt86
+  repo: flowdesk

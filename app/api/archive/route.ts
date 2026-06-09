@@ -2,14 +2,33 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
   listArchivedTodos,
+  listArchiveMonthSummaries,
+  listArchivedTodosByMonth,
   archiveTodoFromTodo,
   restoreArchivedTodo,
   deleteArchivedTodo,
 } from "@/lib/archive";
 
-// GET /api/archive — 보관함 전체 목록
-export async function GET() {
+// GET /api/archive — 보관함 조회
+//   ?summary=true        → 월별 요약만
+//   ?year=2026&month=04  → 해당 월 항목만
+//   (없음)               → 전체 목록
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+
+    if (searchParams.get("summary") === "true") {
+      const months = listArchiveMonthSummaries();
+      return NextResponse.json({ months });
+    }
+
+    const year = searchParams.get("year");
+    const month = searchParams.get("month");
+    if (year && month) {
+      const items = listArchivedTodosByMonth(year, month);
+      return NextResponse.json({ items });
+    }
+
     const items = listArchivedTodos();
     return NextResponse.json({ items });
   } catch (err) {

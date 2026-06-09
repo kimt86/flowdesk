@@ -1,9 +1,9 @@
 import { Presentation } from "lucide-react";
-import { scanPresentations } from "@/lib/presentations";
+import { getCachedPresentations } from "@/lib/presentations";
 import { PresentationList } from "@/components/presentation-list";
 
 export default function PresentationsPage() {
-  const presentations = scanPresentations();
+  const presentations = getCachedPresentations();
 
   return (
     <div className="p-4 md:p-6 max-w-3xl">

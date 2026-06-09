@@ -6,6 +6,8 @@ import { ArrowLeft, Calendar, Users, Tag, Pencil } from "lucide-react";
 import matter from "gray-matter";
 import { readMeetingSafe } from "@/lib/meetings";
 import { renderMarkdown } from "@/lib/markdown";
+import { MarkdownCopyButton } from "@/components/markdown-copy-button";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 interface PageProps {
   searchParams: { path?: string | string[] };
@@ -102,13 +104,16 @@ export default async function MeetingViewPage({ searchParams }: PageProps) {
           <ArrowLeft className="w-4 h-4" />
           회의록
         </Link>
-        <Link
-          href={`/meetings/edit?path=${encodeURIComponent(relPath)}`}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          편집
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/meetings/edit?path=${encodeURIComponent(relPath)}`}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            편집
+          </Link>
+          <MarkdownCopyButton markdown={markdownContent} />
+        </div>
       </div>
 
       <div className="mb-6 pb-4 border-b border-border">
@@ -147,7 +152,7 @@ export default async function MeetingViewPage({ searchParams }: PageProps) {
         )}
       </div>
 
-      <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+      <MarkdownMermaidView html={html} />
     </div>
   );
 }

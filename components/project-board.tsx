@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FolderKanban, Plus, Archive, Pencil, Trash2, RotateCcw, Users, Target, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Project } from "@/lib/projects";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 type Tab = "board" | "archive";
 
@@ -264,9 +265,9 @@ function ProjectDetail({ content }: { content: string }) {
   }
 
   return (
-    <div
+    <MarkdownMermaidView
+      html={html}
       className="mt-3 pt-3 border-t border-border prose prose-sm max-w-none"
-      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }

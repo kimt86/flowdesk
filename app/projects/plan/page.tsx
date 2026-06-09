@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, User, Tag, FileText } from "lucide-react";
 import { readPlanDetail } from "@/lib/plans";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-600",
@@ -122,10 +123,7 @@ export default async function PlanViewPage({ searchParams }: PageProps) {
       </div>
 
       {/* Markdown body */}
-      <div
-        className="prose"
-        dangerouslySetInnerHTML={{ __html: plan.html }}
-      />
+      <MarkdownMermaidView html={plan.html} />
     </div>
   );
 }

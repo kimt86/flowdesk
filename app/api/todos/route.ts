@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { syncTodosFromFile, startFileWatcher } from "@/lib/sync";
-import { addTodo } from "@/lib/parsers/todo-parser";
+import { addTodo, readTodos } from "@/lib/parsers/todo-parser";
 import type { TodoPriority } from "@/lib/types";
 
 // GET /api/todos — todo.md 파싱 후 전체 Todo 반환
 export async function GET() {
   try {
-    await startFileWatcher();
-    const todos = await syncTodosFromFile();
+    const todos = readTodos();
     return NextResponse.json({ todos });
   } catch (err) {
     console.error("[GET /api/todos]", err);
@@ -31,7 +29,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to add todo" }, { status: 500 });
     }
 
-    const todos = await syncTodosFromFile();
+    const todos = readTodos();
     revalidatePath("/", "layout");
     return NextResponse.json({ todos }, { status: 201 });
   } catch (err) {

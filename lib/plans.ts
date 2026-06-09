@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { DOCS_ROOT, plansDir } from "./paths";
 import { renderMarkdown } from "./markdown";
+import { getOrSet } from "./server-cache";
 
 export interface PlanMeta {
   filename: string;
@@ -70,6 +71,10 @@ export function parsePlanMeta(content: string, filename: string): PlanMeta {
 /**
  * List all plan files for a project, sorted by date descending.
  */
+export function getCachedPlans(projectId: string): PlanMeta[] {
+  return getOrSet(`listPlans:${projectId}`, () => listPlans(projectId));
+}
+
 export function listPlans(projectId: string): PlanMeta[] {
   const dir = plansDir(projectId);
   let entries: fs.Dirent[];

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import { MEETING_MINUTES_DIR } from "./paths";
+import { getOrSet } from "./server-cache";
 
 export interface MeetingMeta {
   filePath: string;
@@ -95,6 +96,10 @@ function parseMeetingFile(
     year: year || (dateStr ? parseInt(dateStr.slice(0, 4), 10) : 0),
     month: month || (dateStr ? dateStr.slice(5, 7) : ""),
   };
+}
+
+export function getCachedMeetings(): MeetingMeta[] {
+  return getOrSet("scanMeetings:default", () => scanMeetings());
 }
 
 export function scanMeetings(): MeetingMeta[] {

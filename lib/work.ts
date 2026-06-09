@@ -3,6 +3,7 @@ import path from "path";
 import { WORK_DIR, WORKSPACE_ROOT } from "./paths";
 import { scanDocs } from "./docs";
 import type { DocMeta } from "./docs-shared";
+import { getOrSet } from "./server-cache";
 
 export type WorkFile = DocMeta;
 
@@ -15,6 +16,10 @@ export interface WorkItem {
   dir: string;
   /** 폴더 내부 .md 파일 목록 (재귀) */
   files: WorkFile[];
+}
+
+export function getCachedWork(): WorkItem[] {
+  return getOrSet("scanWork:default", () => scanWork());
 }
 
 /** WORK_DIR 1단계 서브폴더를 work item 단위로 묶어 반환. */

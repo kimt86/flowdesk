@@ -1,11 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { Calendar } from "lucide-react";
-import { scanMeetings } from "@/lib/meetings";
+import { getCachedMeetings } from "@/lib/meetings";
 import { MeetingList } from "@/components/meeting-list";
 
 export default function MeetingsPage() {
-  const meetings = scanMeetings();
+  const meetings = getCachedMeetings();
 
   return (
     <div className="p-4 md:p-6 max-w-3xl">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Monitor } from "lucide-react";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 /*
  * MarkdownPresenter — "한지와 먹" 발표 모드
@@ -93,7 +94,8 @@ export function MarkdownPresenter({ html, title, backHref }: Props) {
 
       {/* 본문 — prose 위에 발표 스케일 덮기 */}
       <div className="flex-1 flex justify-center py-2xl px-lg">
-        <div
+        <MarkdownMermaidView
+          html={html}
           className="prose w-full max-w-5xl
             [&_h1]:font-display [&_h1]:text-[64px] md:[&_h1]:text-[96px] [&_h1]:font-black [&_h1]:leading-[0.92] [&_h1]:tracking-display [&_h1]:mb-lg [&_h1]:mt-xl [&_h1]:border-0
             [&_h2]:font-display [&_h2]:text-5xl [&_h2]:font-bold [&_h2]:leading-tight [&_h2]:tracking-tight [&_h2]:mb-md [&_h2]:mt-xl [&_h2]:border-0 [&_h2]:pb-0
@@ -108,7 +110,6 @@ export function MarkdownPresenter({ html, title, backHref }: Props) {
             [&_hr]:my-2xl [&_hr]:border-border-strong
             [&_table]:text-lg [&_table]:mb-lg
             [&_a]:text-foreground [&_a]:underline [&_a]:decoration-accent [&_a]:underline-offset-4 [&_a]:decoration-[2px]"
-          dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>
 

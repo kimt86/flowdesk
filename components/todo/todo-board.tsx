@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import type { Todo, TodoStatus } from "@/lib/types";
+import type { Todo, TodoStatus, ArchivedTodo } from "@/lib/types";
+import { ArchiveBoard } from "@/components/archive/archive-board";
 import {
   Plus,
   RefreshCw,
@@ -81,8 +82,37 @@ type EditFields = {
   memo: string;
 };
 
-export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
+type TodoView = "active" | "archive";
+
+export function TodoBoard({
+  initialTodos,
+  initialArchived = [],
+}: {
+  initialTodos: Todo[];
+  initialArchived?: ArchivedTodo[];
+}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get("view");
+  const [view, setView] = useState<TodoView>(
+    viewParam === "archive" ? "archive" : "active",
+  );
+
+  useEffect(() => {
+    const next: TodoView = viewParam === "archive" ? "archive" : "active";
+    setView(next);
+  }, [viewParam]);
+
+  function switchView(next: TodoView) {
+    if (next === view) return;
+    setView(next);
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === "archive") params.set("view", "archive");
+    else params.delete("view");
+    const qs = params.toString();
+    router.replace(qs ? `/todos?${qs}` : "/todos", { scroll: false });
+  }
+
   const [todos, setTodos] = useState<Todo[]>(initialTodos);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState<EditFields>({
@@ -318,16 +348,43 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
             진행중 <span className="text-foreground tabular-nums">{activeTodos}</span>
             {"  · "}
             완료 <span className="text-foreground tabular-nums">{doneTodos}</span>
+            {"  · "}
+            보관 <span className="text-foreground tabular-nums">{initialArchived.length}</span>
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => setShowAddForm((v) => !v)}
-        >
-          <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
-          할 일 추가
-        </Button>
+        {view === "active" && (
+          <Button
+            size="sm"
+            onClick={() => setShowAddForm((v) => !v)}
+          >
+            <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
+            할 일 추가
+          </Button>
+        )}
       </header>
+
+      {/* 탭 바 */}
+      <div className="mt-md flex items-center gap-lg border-b border-border">
+        <TabButton
+          active={view === "active"}
+          onClick={() => switchView("active")}
+          label="활성"
+          count={todos.length}
+        />
+        <TabButton
+          active={view === "archive"}
+          onClick={() => switchView("archive")}
+          label="보관함"
+          count={initialArchived.length}
+        />
+      </div>
+
+      {view === "archive" ? (
+        <div className="flex-1 min-h-0 mt-md">
+          <ArchiveBoard initialItems={initialArchived} embedded />
+        </div>
+      ) : (
+        <>
 
       {/* 검색 */}
       <div className="relative mt-md">
@@ -519,7 +576,48 @@ export function TodoBoard({ initialTodos }: { initialTodos: Todo[] }) {
           );
         })}
       </div>
+        </>
+      )}
     </div>
+  );
+}
+
+// ============================================================
+// TabButton — 활성 / 보관함 전환
+// ============================================================
+function TabButton({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "relative -mb-px flex items-center gap-1.5 px-0 py-2 text-sm transition-colors duration-short ease-out-flow",
+        active
+          ? "text-foreground font-medium"
+          : "text-ink-soft hover:text-foreground",
+      )}
+      aria-pressed={active}
+    >
+      <span>{label}</span>
+      <span className="mono-meta tabular-nums">{count}</span>
+      <span
+        className={cn(
+          "absolute left-0 right-0 -bottom-px h-[2px] transition-colors duration-short",
+          active ? "bg-accent" : "bg-transparent",
+        )}
+        aria-hidden
+      />
+    </button>
   );
 }
 

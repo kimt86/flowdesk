@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { syncTodosFromFile } from "@/lib/sync";
 import { updateTodoStatus, updateTodo, deleteTodo, readTodos } from "@/lib/parsers/todo-parser";
 import type { TodoStatus, TodoPriority } from "@/lib/types";
 
@@ -46,7 +45,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Failed to update todo" }, { status: 500 });
     }
 
-    const todos = await syncTodosFromFile();
+    const todos = readTodos();
     revalidatePath("/", "layout");
     return NextResponse.json({ todos });
   } catch (err) {
@@ -72,7 +71,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Failed to delete todo" }, { status: 500 });
     }
 
-    const todos = await syncTodosFromFile();
+    const todos = readTodos();
     revalidatePath("/", "layout");
     return NextResponse.json({ todos });
   } catch (err) {

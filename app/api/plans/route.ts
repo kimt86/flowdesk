@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listPlans } from "@/lib/plans";
+import { getCachedPlans } from "@/lib/plans";
 
 // GET /api/plans?project=<projectId>
 export async function GET(req: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const plans = listPlans(project);
+    const plans = getCachedPlans(project);
     return NextResponse.json({ plans });
   } catch (err) {
     console.error("[GET /api/plans]", err);

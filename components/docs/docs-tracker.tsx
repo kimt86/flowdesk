@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { DocMeta } from "@/lib/docs-shared";
 import { STATUS_LABELS, STATUS_COLORS } from "@/lib/docs-shared";
 import { FileText, Clock, Tag, Search, ChevronDown } from "lucide-react";
+import { NewDocButton } from "@/components/docs/new-doc-button";
 
 const STATUSES = ["draft", "review", "final"] as const;
 
@@ -18,6 +19,23 @@ export function DocsTracker({
 }) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+
+  // docs/ 기준 하위 폴더 추출 — 중간 경로까지 모두 (예: "docs/a/b/c.md" → "a", "a/b")
+  const existingFolders = useMemo(() => {
+    const set = new Set<string>();
+    for (const d of docs) {
+      // relPath는 OS 구분자 — 통일 후 docs/ 제거 + 파일명 제거
+      const norm = d.relPath.replace(/\\/g, "/").replace(/^docs\/?/, "");
+      const idx = norm.lastIndexOf("/");
+      if (idx <= 0) continue;
+      const folder = norm.slice(0, idx);
+      const parts = folder.split("/");
+      for (let i = 1; i <= parts.length; i++) {
+        set.add(parts.slice(0, i).join("/"));
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [docs]);
 
   let filtered = docs;
   if (selectedTags.length > 0) {
@@ -51,11 +69,14 @@ export function DocsTracker({
 
   return (
     <div className="p-4 md:p-6 max-w-5xl">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold">문서</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          docs/ 하위 문서 {docs.length}개 · frontmatter 기반
-        </p>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold">문서</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            docs/ 하위 문서 {docs.length}개 · frontmatter 기반
+          </p>
+        </div>
+        <NewDocButton existingFolders={existingFolders} />
       </div>
 
       {/* 검색 */}

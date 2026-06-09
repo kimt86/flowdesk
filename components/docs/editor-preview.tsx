@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { MarkdownMermaidView } from "@/components/markdown-mermaid-view";
 
 interface Props {
   content: string;
@@ -46,10 +47,7 @@ export function EditorPreview({ content, relPath }: Props) {
           렌더링 중…
         </div>
       )}
-      <div
-        className="prose p-4"
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      <MarkdownMermaidView html={html} className="prose p-4" />
     </div>
   );
 }

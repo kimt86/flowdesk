@@ -1,10 +1,12 @@
 import { fileWatcher, type FileChangeEvent } from "@/lib/file-watcher";
+import { registerCacheInvalidator } from "@/lib/cache-invalidator";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  // 감시 시작 (이미 시작된 경우 무시)
+  // 감시 시작 (이미 시작된 경우 무시) + 캐시 무효화 리스너 등록 (1회성)
   fileWatcher.start();
+  registerCacheInvalidator();
 
   const encoder = new TextEncoder();
 
