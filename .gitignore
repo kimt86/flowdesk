@@ -45,3 +45,4 @@ next-env.d.ts
 
 # 커스텀 한글 폰트(비공개 — 라이선스) — 로컬 유지, 저장소 제외
 app/fonts/aa_*.ttf
+public/fonts/aa_*.ttf

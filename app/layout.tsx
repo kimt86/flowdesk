@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import {
   IBM_Plex_Mono,
   IBM_Plex_Sans_KR,
@@ -11,18 +10,9 @@ import { Sidebar } from "@/components/sidebar";
 import { FileChangeListener } from "@/components/file-change-listener";
 import { CommandPalette } from "@/components/command-palette";
 
-// 로컬 TTF — sans 본문 + display 타이틀.
-// next/font/local이 자동 preload + woff2 변환 + FOUT 방지.
-const aaSans = localFont({
-  src: "./fonts/aa_hapjeong_sans_normal.ttf",
-  variable: "--font-aa-sans",
-  display: "swap",
-});
-const aaDisplay = localFont({
-  src: "./fonts/aa_silent_handwirte.ttf",
-  variable: "--font-aa-display",
-  display: "swap",
-});
+// aa_ 커스텀 한글 폰트(sans 본문 + display 타이틀)는 globals.css의 @font-face
+// (/fonts/aa_*.ttf, 비공개 자산)로 로드한다. 파일이 있으면 그걸로 렌더,
+// 없으면(저장소 미포함·미배치) Pretendard/Paperlogy 등 무료 폰트로 자동 폴백.
 
 // Google 폰트 — next/font/google이 빌드 타임에 다운로드해 .next/static에 self-host한다.
 // 런타임 CDN 호출 0 → 오프라인 데스크톱에서도 동작. 이들은 Latin/숫자 위주 역할이며
@@ -55,8 +45,6 @@ const notoSerifKr = Noto_Serif_KR({
 });
 
 const fontVariables = [
-  aaSans.variable,
-  aaDisplay.variable,
   ibmPlexMono.variable,
   ibmPlexSansKr.variable,
   jetbrainsMono.variable,
