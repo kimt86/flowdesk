@@ -31,17 +31,18 @@
   src: url("/fonts/Paperlogy-7Bold.woff2") format("woff2");
 }
 
-/* aa_ 커스텀 한글 폰트(비공개 자산) — /fonts/aa_*.ttf 가 있으면 본문/디스플레이 1순위로
-   사용되고, 파일이 없으면(저장소 미포함) src 404 → 폴백 스택의 다음 폰트(Pretendard/
-   Paperlogy)로 브라우저가 자동 대체. layout.tsx에서 next/font/local 제거됨. */
+/* aa_ 커스텀 한글 폰트(비공개 자산) — 워크스페이스의 .fonts/ 폴더에서 /api/fonts 라우트로
+   서빙된다(app/api/fonts/[name]). 폰트가 있으면 본문/디스플레이 1순위로 사용되고, 없으면
+   404 → 폴백 스택의 다음 폰트(Pretendard/Paperlogy)로 자동 대체. 앱 번들/저장소엔 미포함이라
+   자동 업데이트가 앱을 교체해도 워크스페이스 폰트는 유지된다. */
 @font-face {
   font-family: "AA Hapjeong Sans";
-  src: url("/fonts/aa_hapjeong_sans_normal.ttf") format("truetype");
+  src: url("/api/fonts/aa_hapjeong_sans_normal.ttf") format("truetype");
   font-display: swap;
 }
 @font-face {
   font-family: "AA Silent Handwrite";
-  src: url("/fonts/aa_silent_handwirte.ttf") format("truetype");
+  src: url("/api/fonts/aa_silent_handwirte.ttf") format("truetype");
   font-display: swap;
 }
 :root {

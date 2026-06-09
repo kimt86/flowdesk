@@ -1,0 +1,7 @@
+  ▲ Next.js 13.5.6
+  - Local:        http://127.0.0.1:31995
+  - Network:      http://127.0.0.1:31995
+
+ ✓ Ready in 96ms
+[FlowDesk] 파일 감시 시작 (docs, meetings, ideas, worklogs, presentations, work)
+[FlowDesk] instrumentation: file-watcher + cache-invalidator 부팅 초기화 완료
