@@ -143,7 +143,7 @@ function Footer({ collapsed }: { collapsed?: boolean }) {
   return (
     <div className="border-t border-border px-md py-sm space-y-sm">
       <div className="flex items-center justify-between">
-        <span className="mono-meta">CLT · master</span>
+        <span className="mono-meta">FlowDesk</span>
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-success" aria-hidden />
           <span className="mono-meta !normal-case !tracking-snug">연동됨</span>

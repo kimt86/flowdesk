@@ -52,7 +52,7 @@ const fontVariables = [
 ].join(" ");
 
 export const metadata: Metadata = {
-  title: "FlowDesk — CLT Digital Team",
+  title: "FlowDesk",
   description: "업무의 흐름을 한 곳에서",
 };
 

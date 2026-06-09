@@ -199,7 +199,7 @@ npm run desktop:pack
 ### 자동 업데이트 & 배포 (적용 완료)
 - **GitHub 저장소**: `kimt86/flowdesk` (공개). 소스 푸시 + Release로 배포.
 - **자동 업데이트(Phase 5b)**: `electron-updater` + GitHub Releases 피드 적용. v0.1.0 릴리스 게시. 설치 앱이 시작 시·6시간마다 새 버전 감지·다운로드·적용. 새 버전 배포: `version` 올림 → `GH_TOKEN` 설정 → `npm run desktop:release`.
-- **커스텀 폰트 정책(aa_, 워크스페이스 서빙)**: 라이선스상 비공개. 앱 번들·저장소·릴리스 어디에도 미포함. 대신 `app/api/fonts/[name]`가 **`<WORKSPACE_ROOT>/.fonts/aa_*.ttf`**를 서빙(allowlist + 경계 검증), globals.css `@font-face`가 `/api/fonts/`로 연결. 워크스페이스에 폰트가 있으면 aa 렌더, 없으면 404 → Pretendard/Paperlogy 폴백. **자동 업데이트가 앱을 교체해도 워크스페이스 `.fonts/`는 유지되므로 폰트가 사라지지 않음.** (이 PC 워크스페이스 `C:\Users\2022029\clt-workspace\.fonts\`에 배치 완료.)
+- **커스텀 폰트 정책(aa_, 워크스페이스 서빙)**: 라이선스상 비공개. 앱 번들·저장소·릴리스 어디에도 미포함. 대신 `app/api/fonts/[name]`가 **`<WORKSPACE_ROOT>/.fonts/aa_*.ttf`**를 서빙(allowlist + 경계 검증), globals.css `@font-face`가 `/api/fonts/`로 연결. 워크스페이스에 폰트가 있으면 aa 렌더, 없으면 404 → Pretendard/Paperlogy 폴백. **자동 업데이트가 앱을 교체해도 워크스페이스 `.fonts/`는 유지되므로 폰트가 사라지지 않음.** (이 PC는 워크스페이스의 `.fonts\` 폴더에 배치 완료.)
 
 ### 결정 대기 / 환경 필요(미적용)
 - **코드 서명**: `electron-builder.yml`에 서명 옵션 자리만 둠. 인증서(Azure Trusted Signing/EV/사내) 확보 시 활성화(§6-3). 미서명 시 SmartScreen 경고.

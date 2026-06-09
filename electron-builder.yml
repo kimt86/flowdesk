@@ -1,6 +1,6 @@
-appId: com.cltdigital.flowdesk
+appId: io.github.kimt86.flowdesk
 productName: FlowDesk
-copyright: © CLT Digital Team
+copyright: © kimt86
 
 directories:
   output: dist-desktop

@@ -8,7 +8,7 @@
 ## 제품 컨텍스트
 
 - **정체**: 마크다운 파일 기반 팀 운영 시스템 (Team OS). 사용자의 `.md` 파일이 Single Source of Truth이며, 앱은 렌즈 역할.
-- **사용자**: CLT 디지털팀 (한국어). 하루 종일 이 도구 안에서 살아가는 데일리 드라이버.
+- **사용자**: 개인 사용자 (한국어). 하루 종일 이 도구 안에서 살아가는 데일리 드라이버.
 - **공간 / 산업**: Personal / Team productivity · PKM · 업무 OS. 경쟁군: Notion, Linear, Obsidian, Logseq, Reflect, Craft.
 - **프로젝트 유형**: 내부 팀용 웹 앱 (Next.js 13 + Tailwind + Radix). 향후 공개 릴리즈 계획.
 - **태그라인**: 업무의 흐름을 한 곳에서 · Workflow in one place.
@@ -281,4 +281,4 @@
 
 ---
 
-*Design System v0.1 · 생성: /design-consultation · 2026-04-15 · CLT Digital Team*
+*Design System v0.1 · 생성: /design-consultation · 2026-04-15*
