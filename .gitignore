@@ -46,3 +46,13 @@ next-env.d.ts
 # 커스텀 한글 폰트(비공개 — 라이선스) — 로컬 유지, 저장소 제외
 app/fonts/aa_*.ttf
 public/fonts/aa_*.ttf
+
+# 임시 빌드 로그(저장소 루트)
+/*-build.txt
+/rel-*.txt
+/fr-*.txt
+/au-*.txt
+/eb-*.txt
+/font*.txt
+/p[0-9]*.txt
+/db-*.txt
