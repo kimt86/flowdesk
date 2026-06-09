@@ -20,10 +20,15 @@ const staticDest = join(standalone, ".next", "static");
 mkdirSync(dirname(staticDest), { recursive: true });
 cpSync(staticSrc, staticDest, { recursive: true });
 
-// public → .next/standalone/public (있을 때만)
+// public → .next/standalone/public (있을 때만).
+// aa_ 커스텀 한글 폰트(비공개·라이선스)는 배포 패키지에서 제외 → 설치본은 무료 폰트로
+// 폴백(globals.css @font-face src 404 → Pretendard/Paperlogy). dev 로컬 서버는 영향 없음.
 const publicSrc = join(root, "public");
 if (existsSync(publicSrc)) {
-  cpSync(publicSrc, join(standalone, "public"), { recursive: true });
+  cpSync(publicSrc, join(standalone, "public"), {
+    recursive: true,
+    filter: (src) => !/[\\/]aa_[^\\/]*\.ttf$/i.test(src),
+  });
 }
 
 console.log("[copy-standalone] static/public → .next/standalone 복사 완료");
