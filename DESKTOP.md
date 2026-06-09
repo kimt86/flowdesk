@@ -196,8 +196,12 @@ npm run desktop:pack
 - **앱 아이콘**: 외부 도구 없이 순수 Node(`scripts/gen-icon.mjs`)로 단청 레드 인장 모티프 아이콘 생성 → `build-resources/icon.png`(electron-builder가 .ico 변환), `electron/icon.png`·`tray.png`(런타임).
 - **viewer**: 브라우저 File System Access API는 Electron(localhost=secure context)에서 동작하므로 현행 유지(네이티브 다이얼로그 전환은 선택).
 
+### 자동 업데이트 & 배포 (적용 완료)
+- **GitHub 저장소**: `kimt86/flowdesk` (공개). 소스 푸시 + Release로 배포.
+- **자동 업데이트(Phase 5b)**: `electron-updater` + GitHub Releases 피드 적용. v0.1.0 릴리스 게시. 설치 앱이 시작 시·6시간마다 새 버전 감지·다운로드·적용. 새 버전 배포: `version` 올림 → `GH_TOKEN` 설정 → `npm run desktop:release`.
+- **커스텀 폰트 정책(aa_)**: 라이선스상 비공개. `app/fonts/aa_*.ttf`·`public/fonts/aa_*.ttf`는 gitignore(저장소 제외), `copy-standalone`가 배포 패키지에서도 제외. globals.css `@font-face`로 로드되어 **로컬에 있으면 사용, 없으면 Pretendard/Paperlogy로 자동 폴백**. `npm run dev`는 로컬 폰트 그대로 사용.
+
 ### 결정 대기 / 환경 필요(미적용)
 - **코드 서명**: `electron-builder.yml`에 서명 옵션 자리만 둠. 인증서(Azure Trusted Signing/EV/사내) 확보 시 활성화(§6-3). 미서명 시 SmartScreen 경고.
-- **자동 업데이트(Phase 5b)**: `electron-updater` 미도입. 배포 인프라(GitHub Releases 등) 결정 후. 1차는 수동 재설치.
 - **asar 크기 최적화(보류·결정 대기)**: `app.asar` ~160MB(electron-builder가 `dependencies`를 번들하나 **런타임 미사용** — 서버는 `resources/standalone/node_modules`로 동작). 인스톨러 ~50MB 절감 가능. 해소: 앱 deps를 `devDependencies`로 이동(웹 prod 배포 `--omit=dev` 안 쓰면 안전 — 현재 웹배포 인프라 없음 확인) 또는 two-package 구조. **웹배포 가능성(§6-1)을 보존하기 위해 의도적으로 보류** — 사용자 결정 후 적용 권장.
 - **GUI 시각 실측**: 메인→서버 fork→HTTP 200은 패키징된 `FlowDesk.exe`로 **헤드리스 검증 완료**(스모크 `{ok:true, status:"HTTP/1.1 200 OK"}`). 단 **창 렌더·드래그·발표 창·트레이·알림의 시각/상호작용**은 디스플레이가 필요해 사용자 환경 실행으로 최종 확인 필요.
