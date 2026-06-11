@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/sidebar";
 import { FileChangeListener } from "@/components/file-change-listener";
 import { CommandPalette } from "@/components/command-palette";
 import { TitleBarThemeSync } from "@/components/titlebar-theme-sync";
+import { AssistantPanel } from "@/components/assistant/assistant-panel";
 
 // aa_ 커스텀 한글 폰트(sans 본문 + display 타이틀)는 globals.css의 @font-face
 // (/fonts/aa_*.ttf, 비공개 자산)로 로드한다. 파일이 있으면 그걸로 렌더,
@@ -82,6 +83,7 @@ export default function RootLayout({
         <div className="flex flex-col md:flex-row min-h-screen bg-background text-foreground">
           <Sidebar />
           <main className="flex-1 overflow-auto">{children}</main>
+          <AssistantPanel />
           <FileChangeListener />
           <TitleBarThemeSync />
           <CommandPalette />

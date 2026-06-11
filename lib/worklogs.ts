@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { WORKLOGS_DIR } from "./paths";
 import { getOrSet } from "./server-cache";
+import { safeWriteFile, safeDeleteFile } from "./safe-write";
 
 export interface WorklogMeta {
   filePath: string;
@@ -111,7 +112,8 @@ export function scanWorklogs(): WorklogMeta[] {
  * relPath 기준으로 파일을 안전하게 읽습니다.
  * WORKLOGS_DIR 외부 경로(path traversal) 접근을 차단합니다.
  */
-export function readWorklogSafe(relPath: string): string | null {
+/** relPath를 WORKLOGS_DIR 내부 절대 경로로 안전하게 resolve. 외부 경로면 null. */
+function resolveWorklogPath(relPath: string): string | null {
   if (!relPath) return null;
   const resolved = path.resolve(WORKLOGS_DIR, relPath);
   if (
@@ -121,9 +123,61 @@ export function readWorklogSafe(relPath: string): string | null {
     return null;
   }
   if (!resolved.endsWith(".md")) return null;
+  return resolved;
+}
+
+/**
+ * relPath 기준으로 파일을 안전하게 읽습니다.
+ * WORKLOGS_DIR 외부 경로(path traversal) 접근을 차단합니다.
+ */
+export function readWorklogSafe(relPath: string): string | null {
+  const resolved = resolveWorklogPath(relPath);
+  if (!resolved) return null;
   try {
     return fs.readFileSync(resolved, "utf-8");
   } catch {
     return null;
+  }
+}
+
+/** 새 업무로그를 생성합니다. 이미 존재하면 false. 중간 디렉토리(연/월) 자동 생성.
+ * 비서가 "한 일 정리"를 주간 로그로 남길 때 사용. 관례 경로: `<year>/<month>/week-<n>.md`. */
+export function createWorklogSafe(relPath: string, content: string): boolean {
+  const resolved = resolveWorklogPath(relPath);
+  if (!resolved) return false;
+  // scanWorklogs는 week-<n>.md 만 목록에 포함하므로, 생성도 같은 규칙을 강제해
+  // "만들었는데 목록에 안 보이는" 불일치를 막는다.
+  if (!/^week-\d+\.md$/i.test(path.basename(resolved))) return false;
+  if (fs.existsSync(resolved)) return false;
+  try {
+    fs.mkdirSync(path.dirname(resolved), { recursive: true });
+    safeWriteFile(resolved, content, "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** relPath 업무로그의 전체 내용을 덮어씁니다(전체 교체). */
+export function writeWorklogSafe(relPath: string, content: string): boolean {
+  const resolved = resolveWorklogPath(relPath);
+  if (!resolved) return false;
+  try {
+    safeWriteFile(resolved, content, "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** relPath 업무로그를 삭제합니다. */
+export function deleteWorklogSafe(relPath: string): boolean {
+  const resolved = resolveWorklogPath(relPath);
+  if (!resolved) return false;
+  try {
+    safeDeleteFile(resolved);
+    return true;
+  } catch {
+    return false;
   }
 }

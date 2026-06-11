@@ -21,4 +21,14 @@ contextBridge.exposeInMainWorld("flowdesk", {
     ipcRenderer.on("flowdesk:reconnect-sse", handler);
     return () => ipcRenderer.removeListener("flowdesk:reconnect-sse", handler);
   },
+  /** AI 비서 Copilot 계정 연결(device flow). 완료 시 {ok, error?} 반환 */
+  connectCopilot: () => ipcRenderer.invoke("flowdesk:copilot-connect"),
+  /** 진행 중인 device flow 취소 */
+  cancelCopilotConnect: () => ipcRenderer.invoke("flowdesk:copilot-cancel"),
+  /** device flow의 user code/URL 수신 콜백 등록 */
+  onCopilotLoginCode: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on("flowdesk:copilot-login-code", handler);
+    return () => ipcRenderer.removeListener("flowdesk:copilot-login-code", handler);
+  },
 });

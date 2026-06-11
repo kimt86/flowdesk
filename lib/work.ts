@@ -4,6 +4,7 @@ import { WORK_DIR, WORKSPACE_ROOT } from "./paths";
 import { scanDocs } from "./docs";
 import type { DocMeta } from "./docs-shared";
 import { getOrSet } from "./server-cache";
+import { safeWriteFile, safeDeleteFile } from "./safe-write";
 
 export type WorkFile = DocMeta;
 
@@ -71,7 +72,7 @@ export function writeWorkSafe(relPath: string, content: string): boolean {
   const resolved = resolveWorkPath(relPath);
   if (!resolved) return false;
   try {
-    fs.writeFileSync(resolved, content, "utf-8");
+    safeWriteFile(resolved, content, "utf-8");
     return true;
   } catch {
     return false;
@@ -82,7 +83,7 @@ export function deleteWorkSafe(relPath: string): boolean {
   const resolved = resolveWorkPath(relPath);
   if (!resolved) return false;
   try {
-    fs.unlinkSync(resolved);
+    safeDeleteFile(resolved);
     return true;
   } catch {
     return false;

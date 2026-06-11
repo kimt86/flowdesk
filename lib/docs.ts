@@ -3,6 +3,7 @@ import path from "path";
 import matter from "gray-matter";
 import { DOCS_ROOT, WORKSPACE_ROOT } from "./paths";
 import { getOrSet } from "./server-cache";
+import { safeWriteFile, safeDeleteFile } from "./safe-write";
 
 // 공유 상수/타입은 docs-shared.ts에서 re-export (클라이언트 호환)
 export { STATUS_LABELS, STATUS_COLORS } from "./docs-shared";
@@ -85,7 +86,7 @@ export function writeDocSafe(relPath: string, content: string): boolean {
   const resolved = resolveDocPath(relPath);
   if (!resolved) return false;
   try {
-    fs.writeFileSync(resolved, content, "utf-8");
+    safeWriteFile(resolved, content, "utf-8");
     return true;
   } catch {
     return false;
@@ -162,7 +163,7 @@ export function createDocSafe(relPath: string, content: string): boolean {
   if (fs.existsSync(resolved)) return false;
   try {
     fs.mkdirSync(path.dirname(resolved), { recursive: true });
-    fs.writeFileSync(resolved, content, "utf-8");
+    safeWriteFile(resolved, content, "utf-8");
     return true;
   } catch {
     return false;
@@ -174,7 +175,7 @@ export function deleteDocSafe(relPath: string): boolean {
   const resolved = resolveDocPath(relPath);
   if (!resolved) return false;
   try {
-    fs.unlinkSync(resolved);
+    safeDeleteFile(resolved);
     return true;
   } catch {
     return false;

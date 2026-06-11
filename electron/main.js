@@ -15,7 +15,7 @@ const {
   powerMonitor,
 } = require("electron");
 const { autoUpdater } = require("electron-updater");
-const { fork } = require("node:child_process");
+const { fork, spawn } = require("node:child_process");
 const path = require("node:path");
 const fs = require("node:fs");
 const net = require("node:net");
@@ -51,6 +51,26 @@ function standaloneDir() {
 }
 function serverEntry() {
   return path.join(standaloneDir(), "server.js");
+}
+// AI 비서용 Copilot CLI 네이티브 바이너리(copilot.exe). asar 밖에 있어야 spawn 가능 →
+// dev=node_modules, prod=resources/agent-bins(electron-builder.yml extraResources).
+// @github/copilot 로더/wasm은 forStdio({path}) 직접 spawn으로 불필요(Phase 0c-1 실증).
+function copilotExePath() {
+  return isDev
+    ? path.join(
+        __dirname,
+        "..",
+        "node_modules",
+        "@github",
+        "copilot-win32-x64",
+        "copilot.exe",
+      )
+    : path.join(process.resourcesPath, "agent-bins", "copilot", "copilot.exe");
+}
+// Copilot CLI 자격/상태 저장 디렉토리(COPILOT_HOME). userData 하위로 격리해 시스템 전역
+// ~/.copilot(다른 계정 로그인)과 분리 → 각 FlowDesk 사용자가 device flow로 자기 계정 연결.
+function copilotHome() {
+  return path.join(app.getPath("userData"), "copilot-home");
 }
 function appIconPath() {
   return path.join(__dirname, "icon.png");
@@ -164,6 +184,8 @@ async function startServer(workspaceRoot) {
       PORT: String(serverPort),
       HOSTNAME: HOST, // loopback 고정 — LAN 노출 차단 (보안)
       WORKSPACE_ROOT: workspaceRoot, // lib/paths.ts cwd 의존 우회 주입
+      FLOWDESK_COPILOT_EXE: copilotExePath(), // AI 비서: copilot.exe 절대경로(asar 밖)
+      COPILOT_HOME: copilotHome(), // 비서 추론도 격리된 자격 디렉토리 사용(device flow 연결분)
     },
     stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
@@ -426,6 +448,87 @@ ipcMain.handle("flowdesk:notify", (_e, payload) => {
 ipcMain.handle("flowdesk:set-titlebar-theme", (_e, isDark) =>
   applyTitleBarTheme(!!isDark),
 );
+
+// ---------- AI 비서 Copilot 연결(device flow) ----------
+// copilot.exe login 을 격리된 COPILOT_HOME 으로 spawn → OAuth device flow.
+// stdout의 코드+URL을 렌더러에 중계하고 브라우저를 연다. CLI가 폴링·토큰저장을 처리.
+let loginProc = null;
+function connectCopilot(sender) {
+  if (loginProc) {
+    try {
+      loginProc.kill();
+    } catch {
+      /* 무시 */
+    }
+    loginProc = null;
+  }
+  const home = copilotHome();
+  try {
+    fs.mkdirSync(home, { recursive: true });
+  } catch {
+    /* 무시 */
+  }
+  const env = { ...process.env, COPILOT_HOME: home, NO_COLOR: "1" };
+  delete env.ELECTRON_RUN_AS_NODE;
+  delete env.COPILOT_GITHUB_TOKEN; // 환경변수 토큰이 device flow를 가리지 않도록
+  delete env.GH_TOKEN;
+  delete env.GITHUB_TOKEN;
+
+  return new Promise((resolve) => {
+    let proc;
+    try {
+      proc = spawn(copilotExePath(), ["login"], {
+        env,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (err) {
+      resolve({ ok: false, error: String(err) });
+      return;
+    }
+    loginProc = proc;
+    let buf = "";
+    let codeSent = false;
+    const onData = (d) => {
+      buf += d.toString();
+      if (codeSent) return;
+      const codeMatch = buf.match(/\b([A-Z0-9]{4}-[A-Z0-9]{4})\b/);
+      const urlMatch = buf.match(/(https:\/\/\S*?github\.com\/login\/device)/i);
+      if (codeMatch) {
+        codeSent = true;
+        const code = codeMatch[1];
+        const url = (urlMatch && urlMatch[1]) || "https://github.com/login/device";
+        try {
+          sender.send("flowdesk:copilot-login-code", { code, url });
+        } catch {
+          /* 렌더러 사라짐 */
+        }
+        shell.openExternal(url).catch(() => {});
+      }
+    };
+    proc.stdout?.on("data", onData);
+    proc.stderr?.on("data", onData);
+    proc.on("exit", (codeNum) => {
+      loginProc = null;
+      resolve({ ok: codeNum === 0 });
+    });
+    proc.on("error", (err) => {
+      loginProc = null;
+      resolve({ ok: false, error: String(err) });
+    });
+  });
+}
+ipcMain.handle("flowdesk:copilot-connect", (e) => connectCopilot(e.sender));
+ipcMain.handle("flowdesk:copilot-cancel", () => {
+  if (loginProc) {
+    try {
+      loginProc.kill();
+    } catch {
+      /* 무시 */
+    }
+    loginProc = null;
+  }
+  return true;
+});
 
 // ---------- 절전/잠금 복귀 → 렌더러에 SSE 재연결 신호 ----------
 function wirePowerMonitor() {

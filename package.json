@@ -16,6 +16,7 @@
     "desktop:release": "npm run desktop:build && electron-builder --win nsis --publish always"
   },
   "dependencies": {
+    "@github/copilot-sdk": "^1.0.0",
     "@milkdown/core": "^7.20.0",
     "@milkdown/ctx": "^7.20.0",
     "@milkdown/plugin-history": "^7.20.0",
@@ -47,7 +48,8 @@
     "remark-html": "^16.0.1",
     "remark-parse": "^11.0.0",
     "remark-rehype": "^11.1.2",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -60,6 +62,7 @@
     "eslint-config-next": "^13.5.6",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

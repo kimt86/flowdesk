@@ -11,6 +11,10 @@ directories:
 files:
   - electron/**/*
   - "!**/*.map"
+  # @github/* 는 app.asar에 넣지 않는다. SDK JS는 standalone(after-pack 복사)에, copilot.exe는
+  # extraResources(agent-bins)에 이미 있고, @github/copilot 로더/ripgrep/mxc-bin/wasm 등 수백 MB
+  # 부수자산은 forStdio({path}) 직접 spawn으로 불필요(Phase 0c-1 실증) → 중복·비대화 제거.
+  - "!node_modules/@github/**"
 
 # standalone 서버 payload는 asar 밖(resources/standalone)에 둔다.
 # node_modules는 electron-builder 글로벌 필터가 제외하므로 afterPack 훅에서 직접 복사.
@@ -19,6 +23,11 @@ extraResources:
     to: standalone
     filter:
       - "**/*"
+  # AI 비서: Copilot CLI 네이티브 바이너리(copilot.exe ~143MB)만 동봉. asar 밖이라 spawn 가능.
+  # @github/copilot 로더/wasm/sharp/ripgrep 등 부수자산은 forStdio({path}) 직접 spawn으로
+  # 불필요 — Phase 0c-1(standalone fork)에서 실증.
+  - from: node_modules/@github/copilot-win32-x64/copilot.exe
+    to: agent-bins/copilot/copilot.exe
 
 # 패키징 후 standalone node_modules 복사(서버 런타임 deps).
 afterPack: scripts/after-pack.js

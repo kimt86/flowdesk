@@ -3,6 +3,7 @@ import path from "path";
 import matter from "gray-matter";
 import { MEETING_MINUTES_DIR } from "./paths";
 import { getOrSet } from "./server-cache";
+import { safeWriteFile, safeDeleteFile } from "./safe-write";
 
 export interface MeetingMeta {
   filePath: string;
@@ -145,7 +146,8 @@ export function scanMeetings(): MeetingMeta[] {
   return results;
 }
 
-export function readMeetingSafe(relPath: string): string | null {
+/** relPath를 MEETING_MINUTES_DIR 내부 절대 경로로 안전하게 resolve. 외부 경로면 null. */
+function resolveMeetingPath(relPath: string): string | null {
   if (!relPath) return null;
   const resolved = path.resolve(MEETING_MINUTES_DIR, relPath);
   if (
@@ -155,9 +157,53 @@ export function readMeetingSafe(relPath: string): string | null {
     return null;
   }
   if (!resolved.endsWith(".md")) return null;
+  return resolved;
+}
+
+export function readMeetingSafe(relPath: string): string | null {
+  const resolved = resolveMeetingPath(relPath);
+  if (!resolved) return null;
   try {
     return fs.readFileSync(resolved, "utf-8");
   } catch {
     return null;
+  }
+}
+
+/** 새 회의록을 생성합니다. 이미 존재하면 false. 중간 디렉토리(연/월) 자동 생성. */
+export function createMeetingSafe(relPath: string, content: string): boolean {
+  const resolved = resolveMeetingPath(relPath);
+  if (!resolved) return false;
+  if (fs.existsSync(resolved)) return false;
+  try {
+    fs.mkdirSync(path.dirname(resolved), { recursive: true });
+    safeWriteFile(resolved, content, "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** relPath 회의록의 전체 내용을 덮어씁니다(전체 교체). */
+export function writeMeetingSafe(relPath: string, content: string): boolean {
+  const resolved = resolveMeetingPath(relPath);
+  if (!resolved) return false;
+  try {
+    safeWriteFile(resolved, content, "utf-8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** relPath 회의록을 삭제합니다. */
+export function deleteMeetingSafe(relPath: string): boolean {
+  const resolved = resolveMeetingPath(relPath);
+  if (!resolved) return false;
+  try {
+    safeDeleteFile(resolved);
+    return true;
+  } catch {
+    return false;
   }
 }
