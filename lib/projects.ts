@@ -1,5 +1,6 @@
 import fs from "fs";
 import { PROJECTS_FILE_PATH } from "./paths";
+import { safeWriteFile } from "./safe-write";
 
 export interface Project {
   id: string;
@@ -58,8 +59,10 @@ export function parseProjects(): Project[] {
     // 헤더(# 프로젝트 현황)나 메타 섹션 건너뛰기
     if (heading.startsWith("#")) continue;
 
-    // Archive 섹션 감지
-    if (/archive/i.test(heading) || heading.includes("🗄️")) {
+    // Archive 섹션 감지 — 정확 매칭(부분문자열 금지). 제목에 "archive"가 들어간 일반
+    // 프로젝트(예: "Archive 전략 논의")가 구분자로 오인돼 사라지는 것을 방지.
+    const archiveLabel = heading.replace(/🗄️/g, "").trim();
+    if (/^archive$/i.test(archiveLabel)) {
       inArchive = true;
       continue;
     }
@@ -136,7 +139,7 @@ export function addProject(title: string, code: string, client: string, goal: st
     rawContent, archived: false,
   });
 
-  fs.writeFileSync(PROJECTS_FILE_PATH, serializeProjects(projects), "utf-8");
+  safeWriteFile(PROJECTS_FILE_PATH, serializeProjects(projects), "utf-8");
   return id;
 }
 
@@ -146,6 +149,10 @@ export function updateProject(id: string, updates: { rawContent?: string; archiv
   if (idx === -1) return false;
 
   if (updates.rawContent !== undefined) {
+    // rawContent는 정확히 하나의 '## 헤딩'을 가져야 안전. 0개면 다음 파싱에서 섹션이
+    // 통째로 사라지고, 2개 이상이면 한 프로젝트가 여러 개로 분열된다 → 거부.
+    const headingCount = (updates.rawContent.match(/^## .+/gm) || []).length;
+    if (headingCount !== 1) return false;
     projects[idx].rawContent = updates.rawContent;
     // rawContent에서 메타데이터 재파싱
     projects[idx].title = projects[idx].rawContent.match(/^## (.+)/m)?.[1]?.trim() ?? projects[idx].title;
@@ -155,7 +162,7 @@ export function updateProject(id: string, updates: { rawContent?: string; archiv
     projects[idx].archived = updates.archived;
   }
 
-  fs.writeFileSync(PROJECTS_FILE_PATH, serializeProjects(projects), "utf-8");
+  safeWriteFile(PROJECTS_FILE_PATH, serializeProjects(projects), "utf-8");
   return true;
 }
 
@@ -163,6 +170,6 @@ export function deleteProject(id: string): boolean {
   const projects = parseProjects();
   const filtered = projects.filter((p) => p.id !== id);
   if (filtered.length === projects.length) return false;
-  fs.writeFileSync(PROJECTS_FILE_PATH, serializeProjects(filtered), "utf-8");
+  safeWriteFile(PROJECTS_FILE_PATH, serializeProjects(filtered), "utf-8");
   return true;
 }

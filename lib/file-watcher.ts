@@ -6,10 +6,20 @@ import {
   WORKLOGS_DIR,
   PRESENTATIONS_DIR,
   WORK_DIR,
+  TODO_DIR,
+  PROJECTS_FILE_PATH,
 } from "./paths";
 
 export interface FileChangeEvent {
-  type: "docs" | "meetings" | "ideas" | "worklogs" | "presentations" | "work";
+  type:
+    | "docs"
+    | "meetings"
+    | "ideas"
+    | "worklogs"
+    | "presentations"
+    | "work"
+    | "todo"
+    | "projects";
   path: string;
   timestamp: number;
 }
@@ -31,6 +41,9 @@ class FileWatcher extends EventEmitter {
         { paths: WORKLOGS_DIR, type: "worklogs" as const },
         { paths: PRESENTATIONS_DIR, type: "presentations" as const },
         { paths: WORK_DIR, type: "work" as const },
+        // todo/(TODO.md·archive) 와 PROJECTS.md — AI 비서 쓰기 자동 새로고침 정합.
+        { paths: TODO_DIR, type: "todo" as const },
+        { paths: PROJECTS_FILE_PATH, type: "projects" as const },
       ];
 
       for (const target of watchTargets) {
@@ -38,6 +51,8 @@ class FileWatcher extends EventEmitter {
           const watcher = chokidar.watch(target.paths, {
             persistent: true,
             ignoreInitial: true,
+            // safe-write의 원자적 임시파일(.tmp)과 백업 디렉토리는 감시 제외.
+            ignored: /(\.tmp$|[\\/]\.flowdesk-trash[\\/])/,
             awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 100 },
           });
 
@@ -58,7 +73,7 @@ class FileWatcher extends EventEmitter {
         }
       }
 
-      console.log("[FlowDesk] 파일 감시 시작 (docs, meetings, ideas, worklogs, presentations, work)");
+      console.log("[FlowDesk] 파일 감시 시작 (docs, meetings, ideas, worklogs, presentations, work, todo, projects)");
     } catch (err) {
       console.error("[FlowDesk] 파일 감시 시작 실패:", err);
       this.started = false;

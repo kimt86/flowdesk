@@ -6,6 +6,7 @@ export const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT
   : path.resolve(process.cwd(), "..");
 
 export const DOCS_ROOT = path.join(WORKSPACE_ROOT, "docs");
+export const TODO_DIR = path.join(WORKSPACE_ROOT, "todo");
 export const TODO_FILE_PATH = path.join(WORKSPACE_ROOT, "todo", "TODO.md");
 export const WORKLOGS_DIR = path.join(WORKSPACE_ROOT, "work-logs");
 export const WORK_DIR = path.join(WORKSPACE_ROOT, "work");

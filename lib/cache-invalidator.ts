@@ -21,6 +21,8 @@ const TYPE_TO_KEYS: Record<FileChangeEvent["type"], string[]> = {
   worklogs: ["scanWorklogs:default"],
   presentations: ["scanPresentations:default"],
   ideas: [], // ideas는 별도 캐시 없음 — list 페이지가 단일 파일 read만 함
+  todo: [], // today/archive는 캐시 없이 매번 파일 read — SSE refresh만으로 충분
+  projects: [], // PROJECTS.md도 매번 read
 };
 
 // type별 추가로 prefix invalidate (예: docs 변경 시 plans 캐시도 영향)

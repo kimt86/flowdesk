@@ -15,6 +15,8 @@ const TYPE_TO_ROUTE_PREFIXES: Record<string, string[]> = {
   worklogs: ["/weekly"],
   presentations: ["/presentations"],
   ideas: ["/ideas"],
+  todo: ["/", "/today", "/todos", "/archive"], // AI 비서 할 일·보관함 쓰기 반영
+  projects: ["/projects"],
 };
 
 function shouldRefresh(pathname: string, eventType: string): boolean {
@@ -31,6 +33,8 @@ const TYPE_TO_LABEL: Record<string, string> = {
   worklogs: "주간 보고서",
   presentations: "발표자료",
   ideas: "아이디어",
+  todo: "할 일",
+  projects: "프로젝트",
 };
 
 // Electron preload(contextBridge)가 노출하는 API.

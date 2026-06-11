@@ -1,6 +1,7 @@
 import fs from "fs";
 import { TodayTask, TodayFile, DocRef } from "@/lib/types";
 import { TODAY_FILE_PATH } from "@/lib/paths";
+import { safeWriteFile } from "@/lib/safe-write";
 
 export { TODAY_FILE_PATH };
 
@@ -227,7 +228,8 @@ export function updateTodayTask(lineIndex: number, fields: TodayTaskFields): boo
 
     if (lineIndex < 0 || lineIndex >= lines.length) return false;
     const line = lines[lineIndex];
-    const match = line.match(/^- \[([x ])\] (.+)$/);
+    // 파서(parseTodayFile)와 동일하게 4가지 체크박스 상태 모두 인식: x 완료 / 공백 미완료 / ~ 진행중 / ! 보류
+    const match = line.match(/^- \[([x~! ])\] (.+)$/);
     if (!match) return false;
 
     const file = parseTodayFile(content);
@@ -252,7 +254,7 @@ export function updateTodayTask(lineIndex: number, fields: TodayTaskFields): boo
       : [];
 
     const next = [...lines.slice(0, lineIndex), newLine, ...memoLines, ...lines.slice(end)];
-    fs.writeFileSync(TODAY_FILE_PATH, next.join("\n"), "utf-8");
+    safeWriteFile(TODAY_FILE_PATH, next.join("\n"), "utf-8");
     return true;
   } catch {
     return false;
@@ -271,42 +273,11 @@ export function addTodayTask(fields: {
     const content = fs.readFileSync(TODAY_FILE_PATH, "utf-8");
     const lines = content.split("\n");
 
-    let sectionStart = -1;
-    let sectionEnd = lines.length;
-    for (let i = 0; i < lines.length; i++) {
-      if (/^##\s+오늘 할 일/.test(lines[i])) {
-        sectionStart = i;
-        break;
-      }
-    }
-    if (sectionStart === -1) return false;
-
-    for (let i = sectionStart + 1; i < lines.length; i++) {
-      if (/^##\s+/.test(lines[i]) || /^---\s*$/.test(lines[i])) {
-        sectionEnd = i;
-        break;
-      }
-    }
-
-    // Insert before "### 메모" subsection if present, else at section end
-    let insertAt = sectionEnd;
-    for (let i = sectionStart + 1; i < sectionEnd; i++) {
-      if (/^###\s+/.test(lines[i])) {
-        insertAt = i;
-        break;
-      }
-    }
-    while (insertAt > sectionStart + 1 && lines[insertAt - 1].trim() === "") insertAt--;
-
-    // Skip if duplicate (same content already in today section)
+    // 중복 방지: 이미 같은 내용의 오늘(#today) 항목이 있으면 추가 생략(성공 처리).
+    // 파서(parseTodayFile) 기준으로 판정 → 읽기/쓰기 일관.
     const trimmedContent = fields.content.trim();
-    for (let i = sectionStart + 1; i < sectionEnd; i++) {
-      const m = lines[i].match(/^- \[[x ]\] (.+)$/);
-      if (m) {
-        const existing = parseTaskRaw(m[1]).content.trim();
-        if (existing === trimmedContent) return true;
-      }
-    }
+    const parsed = parseTodayFile(content);
+    if (parsed.tasks.some((t) => t.content.trim() === trimmedContent)) return true;
 
     const newLine = buildTaskLine({
       done: false,
@@ -320,8 +291,46 @@ export function addTodayTask(fields: {
       ? fields.memo.split("\n").map((m) => `  > ${m}`)
       : [];
 
-    lines.splice(insertAt, 0, newLine, ...memoLines);
-    fs.writeFileSync(TODAY_FILE_PATH, lines.join("\n"), "utf-8");
+    // 1) "오늘 할 일" 헤더(h1~h6, 이모지/날짜 접두 허용)를 찾으면 그 섹션 안에 삽입.
+    const sectionStart = lines.findIndex((l) =>
+      /^#{1,6}\s+.*오늘\s*할\s*일/.test(l),
+    );
+    if (sectionStart !== -1) {
+      let sectionEnd = lines.length;
+      for (let i = sectionStart + 1; i < lines.length; i++) {
+        if (/^#{1,6}\s+/.test(lines[i]) || /^---\s*$/.test(lines[i])) {
+          sectionEnd = i;
+          break;
+        }
+      }
+      // "### 메모" 등 하위 섹션 앞, 아니면 섹션 끝에 삽입
+      let insertAt = sectionEnd;
+      for (let i = sectionStart + 1; i < sectionEnd; i++) {
+        if (/^###\s+/.test(lines[i])) {
+          insertAt = i;
+          break;
+        }
+      }
+      while (insertAt > sectionStart + 1 && lines[insertAt - 1].trim() === "") insertAt--;
+      lines.splice(insertAt, 0, newLine, ...memoLines);
+      safeWriteFile(TODAY_FILE_PATH, lines.join("\n"), "utf-8");
+      return true;
+    }
+
+    // 2) 헤더 형식이 달라도, 기존 #today 항목 마지막 블록(메모 포함) 뒤에 삽입 — 읽기와 동일 기준.
+    if (parsed.tasks.length > 0) {
+      const last = parsed.tasks[parsed.tasks.length - 1];
+      let insertAt = last.lineIndex + 1;
+      while (insertAt < lines.length && /^\s{2}>\s?/.test(lines[insertAt])) insertAt++;
+      lines.splice(insertAt, 0, newLine, ...memoLines);
+      safeWriteFile(TODAY_FILE_PATH, lines.join("\n"), "utf-8");
+      return true;
+    }
+
+    // 3) 항목도 헤더도 없으면 파일 끝에 "## 오늘 할 일" 섹션을 만들어 추가.
+    const gap = lines.length > 0 && lines[lines.length - 1].trim() !== "" ? [""] : [];
+    lines.push(...gap, "## 오늘 할 일", newLine, ...memoLines, "");
+    safeWriteFile(TODAY_FILE_PATH, lines.join("\n"), "utf-8");
     return true;
   } catch {
     return false;
@@ -334,11 +343,11 @@ export function deleteTodayTask(lineIndex: number): boolean {
     const lines = content.split("\n");
 
     if (lineIndex < 0 || lineIndex >= lines.length) return false;
-    if (!/^- \[[x ]\] /.test(lines[lineIndex])) return false;
+    if (!/^- \[[x~! ]\] /.test(lines[lineIndex])) return false;
 
     const { end } = findMemoRange(lines, lineIndex);
     const next = [...lines.slice(0, lineIndex), ...lines.slice(end)];
-    fs.writeFileSync(TODAY_FILE_PATH, next.join("\n"), "utf-8");
+    safeWriteFile(TODAY_FILE_PATH, next.join("\n"), "utf-8");
     return true;
   } catch {
     return false;
@@ -353,16 +362,17 @@ export function toggleTodayTask(lineIndex: number): boolean {
     if (lineIndex < 0 || lineIndex >= lines.length) return false;
 
     const line = lines[lineIndex];
-    const match = line.match(/^- \[([x ])\]/);
+    // 4가지 체크박스 상태 모두 인식. x면 미완료(공백)로, 그 외(공백/~/!)는 완료(x)로 토글.
+    const match = line.match(/^- \[([x~! ])\]/);
     if (!match) return false;
 
     if (match[1] === "x") {
       lines[lineIndex] = line.replace(/^(- \[)x(\])/, "$1 $2");
     } else {
-      lines[lineIndex] = line.replace(/^(- \[) (\])/, "$1x$2");
+      lines[lineIndex] = line.replace(/^(- \[)[ ~!](\])/, "$1x$2");
     }
 
-    fs.writeFileSync(TODAY_FILE_PATH, lines.join("\n"), "utf-8");
+    safeWriteFile(TODAY_FILE_PATH, lines.join("\n"), "utf-8");
     return true;
   } catch {
     return false;

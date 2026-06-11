@@ -3,6 +3,7 @@ import path from "path";
 import { ArchivedTodo, MonthSummary, Todo } from "@/lib/types";
 import { ARCHIVE_DIR, ARCHIVE_FILE_PATH, TODAY_FILE_PATH } from "@/lib/paths";
 import { parseTodos } from "@/lib/parsers/todo-parser";
+import { safeWriteFile } from "@/lib/safe-write";
 
 function walkMarkdown(dir: string): string[] {
   const results: string[] = [];
@@ -139,8 +140,19 @@ export function listArchivedTodosByMonth(year: string, month: string): ArchivedT
   return all;
 }
 
+// lineIndex가 코드펜스(```) 내부인지 — parseTodos는 코드블록 내 체크박스를 task로 인식하지
+// 않으므로, archive mutation도 코드블록 내부 줄을 task로 오인하지 않도록 동일하게 방어.
+function isInsideCodeBlock(lines: string[], lineIndex: number): boolean {
+  let inBlock = false;
+  for (let i = 0; i < lineIndex; i++) {
+    if (lines[i].trimStart().startsWith("```")) inBlock = !inBlock;
+  }
+  return inBlock;
+}
+
 function extractTaskBlock(lines: string[], lineIndex: number): { block: string[]; end: number } | null {
   if (lineIndex < 0 || lineIndex >= lines.length) return null;
+  if (isInsideCodeBlock(lines, lineIndex)) return null;
   if (!/^- \[[x~! ]\] /.test(lines[lineIndex])) return null;
 
   const block = [lines[lineIndex]];
@@ -166,7 +178,7 @@ function ensureArchiveFile(): void {
       "",
       "",
     ].join("\n");
-    fs.writeFileSync(ARCHIVE_FILE_PATH, header, "utf-8");
+    safeWriteFile(ARCHIVE_FILE_PATH, header, "utf-8");
   }
 }
 
@@ -180,7 +192,7 @@ export function archiveTodoFromTodo(lineIndex: number): boolean {
 
     // TODO.md에서 제거
     const next = [...lines.slice(0, lineIndex), ...lines.slice(extracted.end)];
-    fs.writeFileSync(TODAY_FILE_PATH, next.join("\n"), "utf-8");
+    safeWriteFile(TODAY_FILE_PATH, next.join("\n"), "utf-8");
 
     // archive.md 상단(헤더 다음)에 prepend
     ensureArchiveFile();
@@ -196,7 +208,7 @@ export function archiveTodoFromTodo(lineIndex: number): boolean {
     }
 
     archiveLines.splice(insertAt, 0, ...extracted.block);
-    fs.writeFileSync(ARCHIVE_FILE_PATH, archiveLines.join("\n"), "utf-8");
+    safeWriteFile(ARCHIVE_FILE_PATH, archiveLines.join("\n"), "utf-8");
     return true;
   } catch {
     return false;
@@ -214,7 +226,7 @@ export function restoreArchivedTodo(archiveFile: string, lineIndex: number): boo
 
     // archive 파일에서 제거
     const next = [...lines.slice(0, lineIndex), ...lines.slice(extracted.end)];
-    fs.writeFileSync(absPath, next.join("\n"), "utf-8");
+    safeWriteFile(absPath, next.join("\n"), "utf-8");
 
     // TODO.md의 `## 완료` 섹션 상단에 삽입
     const todoContent = fs.readFileSync(TODAY_FILE_PATH, "utf-8");
@@ -231,7 +243,7 @@ export function restoreArchivedTodo(archiveFile: string, lineIndex: number): boo
       todoLines.splice(insertAt, 0, ...extracted.block);
     }
 
-    fs.writeFileSync(TODAY_FILE_PATH, todoLines.join("\n"), "utf-8");
+    safeWriteFile(TODAY_FILE_PATH, todoLines.join("\n"), "utf-8");
     return true;
   } catch {
     return false;
@@ -248,7 +260,7 @@ export function deleteArchivedTodo(archiveFile: string, lineIndex: number): bool
     if (!extracted) return false;
 
     const next = [...lines.slice(0, lineIndex), ...lines.slice(extracted.end)];
-    fs.writeFileSync(absPath, next.join("\n"), "utf-8");
+    safeWriteFile(absPath, next.join("\n"), "utf-8");
     return true;
   } catch {
     return false;

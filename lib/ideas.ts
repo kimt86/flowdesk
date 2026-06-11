@@ -1,5 +1,37 @@
 import fs from "fs";
 import { IDEAS_FILE_PATH } from "./paths";
+import { safeWriteFile } from "./safe-write";
+
+// 한 줄 의사-YAML(`key: value`)이라 값에 줄바꿈/`---`/콤마가 있으면 파싱이 깨진다.
+// 직렬화 시 JSON 인코딩하고 파싱 시 디코드해 안전하게 보존한다. 따옴표로 감싸인 JSON
+// 문자열이 아니면 기존 plain 값으로 간주(하위호환).
+function encodeValue(v: string): string {
+  return JSON.stringify(v);
+}
+function decodeValue(raw: string): string {
+  if (raw.startsWith('"') && raw.endsWith('"')) {
+    try {
+      const v = JSON.parse(raw);
+      if (typeof v === "string") return v;
+    } catch {
+      /* plain 유지 */
+    }
+  }
+  return raw;
+}
+function parseTagList(raw: string): string[] {
+  if (!raw) return [];
+  // 신규: JSON 배열. 레거시: [a, b] 형태.
+  try {
+    const v = JSON.parse(raw);
+    if (Array.isArray(v)) return v.map(String);
+  } catch {
+    /* 레거시 파싱으로 폴백 */
+  }
+  const arrMatch = raw.match(/\[([^\]]*)\]/);
+  if (arrMatch) return arrMatch[1].split(",").map((t) => t.trim()).filter(Boolean);
+  return [];
+}
 
 export interface Idea {
   id: string;
@@ -28,19 +60,13 @@ export function parseIdeas(): Idea[] {
     if (block.trim().startsWith("#") || !block.includes("title:")) continue;
 
     try {
-      const get = (key: string): string => {
+      const raw = (key: string): string => {
         const match = block.match(new RegExp(`^${key}:\\s*(.+)$`, "m"));
         return match ? match[1].trim() : "";
       };
+      const get = (key: string): string => decodeValue(raw(key));
 
-      const tagsRaw = get("tags");
-      let tags: string[] = [];
-      if (tagsRaw) {
-        const arrMatch = tagsRaw.match(/\[([^\]]*)\]/);
-        if (arrMatch) {
-          tags = arrMatch[1].split(",").map((t) => t.trim()).filter(Boolean);
-        }
-      }
+      const tags = parseTagList(raw("tags"));
 
       const id = get("id");
       const title = get("title");
@@ -66,13 +92,12 @@ export function parseIdeas(): Idea[] {
 function serializeIdeas(ideas: Idea[]): string {
   const header = "# Idea Board\n";
   const blocks = ideas.map((idea) => {
-    const tags = idea.tags.length > 0 ? `[${idea.tags.join(", ")}]` : "[]";
     return [
       "---",
       `id: ${idea.id}`,
-      `title: ${idea.title}`,
-      `content: ${idea.content}`,
-      `tags: ${tags}`,
+      `title: ${encodeValue(idea.title)}`,
+      `content: ${encodeValue(idea.content)}`,
+      `tags: ${JSON.stringify(idea.tags)}`,
       `date: ${idea.date}`,
       `status: ${idea.status}`,
       "---",
@@ -89,7 +114,7 @@ export function addIdea(title: string, content: string, tags: string[]): string 
   const today = new Date().toISOString().slice(0, 10);
 
   ideas.unshift({ id, title, content, tags, date: today, status: "board" });
-  fs.writeFileSync(IDEAS_FILE_PATH, serializeIdeas(ideas), "utf-8");
+  safeWriteFile(IDEAS_FILE_PATH, serializeIdeas(ideas), "utf-8");
   return id;
 }
 
@@ -107,7 +132,7 @@ export function updateIdea(
   if (updates.tags !== undefined) ideas[idx].tags = updates.tags;
   if (updates.status !== undefined) ideas[idx].status = updates.status;
 
-  fs.writeFileSync(IDEAS_FILE_PATH, serializeIdeas(ideas), "utf-8");
+  safeWriteFile(IDEAS_FILE_PATH, serializeIdeas(ideas), "utf-8");
   return true;
 }
 
@@ -117,6 +142,6 @@ export function deleteIdea(id: string): boolean {
   const filtered = ideas.filter((i) => i.id !== id);
   if (filtered.length === ideas.length) return false;
 
-  fs.writeFileSync(IDEAS_FILE_PATH, serializeIdeas(filtered), "utf-8");
+  safeWriteFile(IDEAS_FILE_PATH, serializeIdeas(filtered), "utf-8");
   return true;
 }
